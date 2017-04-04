@@ -1,7 +1,11 @@
-function out=ReadTR(FileName)
+function out=ReadTR(FileName, PlotSingleTrials)
 %ReadTR compute proportion of real path length to optimal one
 % categorize tasks according to the demands/difficulty level
 % Eduard Kelemen (c) 3/2017
+
+if ~exist('PlotSingleTrials','var')
+    PlotSingleTrials = 0; %defaulne chci vykrestli obrazek vsech trialu najednou
+end %1 znamena subplot, 2 znamena opravdu sinle trials
 
 out{1,1}=FileName;
 out{2,1}='num';
@@ -13,6 +17,7 @@ out{2,6}='errors';
 out{2,7}='squairepair'; %jmeno aktualni dvojice ctvercu
 out{2,8}='squairepairno'; %cislo dvojice ctvercu v poradi
 out{2,9}='errorsTR'; %pocet chyb podle TR souboru
+
 
 FileNameShort = FileName; %uschovam na pozdeji
 FileName=['d:\prace\mff\data\aappSeg\skriptyForest\output\' FileName '.tr'];
@@ -39,8 +44,10 @@ firstdataline=0;
 NumErr=0;
 FigureStarted = false; %jestli uz bylo nakreslene zakladni schema obrazku
 fprintf('SquarePairs: ');
+SquarePaire = ''; %defaultni hodnota
 SquarePaireNo = 0;
 ErrorsTR = 0;
+ErrorsTRLast = 0; %defaultni hodnota
 while feof(FileID)==0
 %while isempty(strfind(line, 'text:VYBORNE !'));
 
@@ -147,9 +154,18 @@ while feof(FileID)==0
         end        
         CurGoal=str2num(CurrentAim(5));
         % ---------- ZACINAM KRESLIT OBRAZEK ---------------     
-        if ~FigureStarted
-            figure('Name','Sumarni obrazek'); %jeden obrazek pro cely tr soubor?
-            
+        if ~FigureStarted || PlotSingleTrials > 0
+            if PlotSingleTrials == 2
+               figure('Name',['Trial' num2str(SearchNum)]); %jeden obrazek pro kazdy trial
+            elseif PlotSingleTrials == 1
+                if ~FigureStarted
+                    figure('Name','Sumarni obrazek');
+                    FigureStarted = true;
+                end
+                subplot(4,4,SearchNum);
+            else        
+               figure('Name','Sumarni obrazek'); %jeden obrazek pro cely tr soubor?
+            end
             % pozice ctvercu
             X1=mean(AimX(1,:));Y1=mean(AimY(1,:));
             X2=mean(AimX(2,:));Y2=mean(AimY(2,:));
@@ -193,8 +209,12 @@ while feof(FileID)==0
         
         Duration=time(end)-time(2); %cas  nalezeni cile
         Length=LengthofTrack(ArenaLocX(2:end),ArenaLocY(2:end)); %delka cesty do cile
-        % titulek obrazku nepotrebuju, kdyz kreslim sumarni
-        % title(['Search# ' num2str(SearchNum) '   ' CurrentAim '-' Cil '   duration: ' num2str(Duration) '   length: ' num2str(Length) '   Errors: ' num2str(NumErr)])
+        
+        if PlotSingleTrials == 2
+            title(['Search# ' num2str(SearchNum) '   ' CurrentAim '-' Cil '   duration: ' num2str(Duration) '   length: ' num2str(Length) '   Errors: ' num2str(NumErr)])
+        elseif PlotSingleTrials == 1
+            title(['# ' num2str(SearchNum)] );
+        end
         
         % ----  vystupni tabulka  ---------------
         out{2+SearchNum,1}=SearchNum;
@@ -208,7 +228,7 @@ while feof(FileID)==0
         out{2+SearchNum,9}=ErrorsTR - ErrorsTRLast;   %pocet chyb podle TR souboru
     end
 end
-fprintf(' ...  finished\n');
+fprintf(' ...  finished with %i trials\n',SearchNum);
 
 
 
