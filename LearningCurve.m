@@ -9,6 +9,7 @@ for s = 1:numel(DATA) %subjekty v cells
     outdata = DATA{s}; %data z jednoho subjektu
     subjects{s} = strrep(outdata{1,1}, '_','\_');
     SPs = cell( outdata{end,8},1); %seznam paru ctvercu jak sly za sebou
+    SPpocty = zeros(outdata{end,8},1);
     Err  = zeros(outdata{end,8},1); %pocet chyb
 
     for j = 1:size(outdata,1)
@@ -22,7 +23,9 @@ for s = 1:numel(DATA) %subjekty v cells
             SquarePaireNo = outdata{j,8};
             ErrorsTR = outdata{j,9};
             if strcmp(SquarePaire,SquarePaireNext)== 0 %pokud jsou ruzne
+                SquarePairePocet = numel(find(strcmp(SPs, SquarePaire)));
                 SPs{SquarePaireNo} = SquarePaire;
+                SPpocty(SquarePaireNo) = SquarePairePocet + 1; %kolikate to je opakovani tehle dvojice ctvercu
                 Err(SquarePaireNo) = ErrorsTR;
             end
         end
@@ -30,13 +33,16 @@ for s = 1:numel(DATA) %subjekty v cells
     
     trialsmax = max(trialsmax,numel(Err));
     if ~figurestarted
-        figure('Name','Learning Curve');        
+        figure('Name','Learning Curve', 'Position',[100, 100, 900, 400]);        
         figurestarted = true;
     end
     plot(Err,'o-');
     hold all; %ruzne barvy
     if trialsmax == numel(Err) %pokud je zde maximalni pocet trialu
         set(gca,'XTick',1:numel(Err));
+        for j = 1:numel(SPs)
+            SPs{j} = [SPs{j} num2str(SPpocty(j))];
+        end
         set(gca,'XTickLabel',SPs); %popisky osy x
     end
     if numel(DATA) == 1
@@ -45,5 +51,7 @@ for s = 1:numel(DATA) %subjekty v cells
     
 end
 ylim([0 8]);
-legend(subjects);
+if numel(DATA) > 1 
+    legend(subjects);
+end
 
