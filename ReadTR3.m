@@ -33,12 +33,13 @@ FileID=fopen(FileName);
 SearchNum=0;
 NL=0;line=[];
 %while strcmp(line(1:6),' 0.000')==0
-while isempty(strfind(line, 'Ukaz na'));
+%NACITAM POZICE STANU
+while isempty(strfind(line, 'Ukaz na')) %tim ukoncuju hledani stanu
     line=fgetl(FileID);
     NL=NL+1;
     if strfind(line, 'Aim position')
         Aim=GetAimPositions(line);
-        AimX=Aim{1};
+        AimX=Aim{1}; %9x6 double - ctverce a stany v nich
         AimY=Aim{2};
     end
 end
@@ -48,7 +49,7 @@ DLN=0;
 firstdataline=0;
 NumErr=0;
 
-X(1)=mean(AimX(1,:));Y(1)=mean(AimY(1,:));
+X(1)=mean(AimX(1,:));Y(1)=mean(AimY(1,:)); %stredy jednotlivych ctvercu, X a Y, jako mean pozice stanu
 X(2)=mean(AimX(2,:));Y(2)=mean(AimY(2,:));
 X(3)=mean(AimX(3,:));Y(3)=mean(AimY(3,:));
 X(4)=mean(AimX(4,:));Y(4)=mean(AimY(4,:));
@@ -63,25 +64,26 @@ X(9)=mean(AimX(9,:));Y(9)=mean(AimY(9,:));
 while feof(FileID)==0
     line=fgetl(FileID);
     NL=NL+1;
-    if strcmp(line(1),' ')
+    if strcmp(line(1),' ') %Dataline
         DLN=DLN+1;
-        if firstdataline==0
+        if firstdataline==0 %privni radka s popisem sloupcu
             divider=line(7);
             firstdataline=1;
         end
         k=strfind(line, divider);
+        %tri udaje, ktere si beru tracku - udaju o pozici subjektu
         time(DLN)=str2num(line(2:k(1)-1));
         ArenaLocX(DLN)=str2num(line(k(2)+1:k(3)-1));
         ArenaLocY(DLN)=str2num(line(k(3)+1:k(4)-1));
     end   
-    if strfind(line,'space')
+    if strfind(line,'space') %ukazani na cil
         Angle=str2num(line(k(7)+1:k(8)-1));
         Angle=rem(Angle,360);
         if Angle<0
             Angle=Angle+360;
         end
     end 
-    if strfind(line, 'text:Najdi')
+    if strfind(line, 'text:Najdi') %zacatek hledani zvirete po ukazani
         time=[];
         ArenaLocX=[];
         ArenaLocY=[];
@@ -90,44 +92,36 @@ while feof(FileID)==0
         ErrBox=[];
         ErrGoal=[];
         n=strfind(line, 'text:Najdi');
-        Cil=line(n+11:end-2);
+        Cil=line(n+11:end-2); %jmeno mista napr KOLIBRIKA
     end 
-    if strfind(line, 'Avoid entrance:')
+    if strfind(line, 'Avoid entrance:') %vstup do chybneho stanu
         NumErr=NumErr+1;
         n=strfind(line, 'Avoid entrance:');
-        ErrAim=line(n+15:n+19);
-        if strcmp(ErrAim(4),'A')
-            ErrBox(NumErr)=1;
-        end
-        if strcmp(ErrAim(4),'B')
+        ErrAim=line(n+15:n+19); %napr AimA2 
+        if strcmp(ErrAim(4),'A') %cislo ctverce
+            ErrBox(NumErr)=1; %#ok<*AGROW>
+        elseif strcmp(ErrAim(4),'B')
             ErrBox(NumErr)=2;
-        end
-        if strcmp(ErrAim(4),'C')
+        elseif strcmp(ErrAim(4),'C')
             ErrBox(NumErr)=3;
-        end
-        if strcmp(ErrAim(4),'D')
+        elseif strcmp(ErrAim(4),'D')
             ErrBox(NumErr)=4;
-        end
-        if strcmp(ErrAim(4),'E')
+        elseif strcmp(ErrAim(4),'E')
             ErrBox(NumErr)=5;
-        end
-        if strcmp(ErrAim(4),'F')
+        elseif strcmp(ErrAim(4),'F')
             ErrBox(NumErr)=6;
-        end        
-        if strcmp(ErrAim(4),'G')
+        elseif strcmp(ErrAim(4),'G')
             ErrBox(NumErr)=7;
-        end
-        if strcmp(ErrAim(4),'H')
+        elseif strcmp(ErrAim(4),'H')
             ErrBox(NumErr)=8;
-        end
-        if strcmp(ErrAim(4),'I')
+        elseif strcmp(ErrAim(4),'I')
             ErrBox(NumErr)=9;
         end        
         ErrGoal(NumErr)=str2num(ErrAim(5));
     end
 
     
-    
+    %ukonceni hledani cile 
     if length(strfind(line, 'Aim entrance:'))>0 || length(strfind(line, 'Aim not found:'))>0
 
         SearchNum=SearchNum+1;
@@ -143,30 +137,22 @@ while feof(FileID)==0
             AimFound=0;
         end
         if strcmp(CurrentAim(4),'A')
-            CurBox=1;
-        end
-        if strcmp(CurrentAim(4),'B')
+            CurBox=1; %cislo ctverce s cilem
+        elseif strcmp(CurrentAim(4),'B')
             CurBox=2;
-        end
-        if strcmp(CurrentAim(4),'C')
+        elseif strcmp(CurrentAim(4),'C')
             CurBox=3;
-        end
-        if strcmp(CurrentAim(4),'D')
+        elseif strcmp(CurrentAim(4),'D')
             CurBox=4;
-        end
-        if strcmp(CurrentAim(4),'E')
+        elseif strcmp(CurrentAim(4),'E')
             CurBox=5;
-        end
-        if strcmp(CurrentAim(4),'F')
+        elseif strcmp(CurrentAim(4),'F')
             CurBox=6;
-        end        
-        if strcmp(CurrentAim(4),'G')
+        elseif strcmp(CurrentAim(4),'G')
             CurBox=7;
-        end
-        if strcmp(CurrentAim(4),'H')
+        elseif strcmp(CurrentAim(4),'H')
             CurBox=8;
-        end
-        if strcmp(CurrentAim(4),'I')
+        elseif strcmp(CurrentAim(4),'I')
             CurBox=9;
         end        
         CurGoal=str2num(CurrentAim(5));
@@ -175,53 +161,53 @@ while feof(FileID)==0
             figure
         end
         PlotPosition=SearchNum;
-        while PlotPosition>PlotsInFigure; 
+        while PlotPosition>PlotsInFigure 
             PlotPosition=PlotPosition-PlotsInFigure;
         end
         subplot(3,5,PlotPosition)
-        plot([X(1)+500 X(2)-500],[0-Y(1) 0-Y(2)],'k')
+        plot([X(1)+500 X(2)-500],[0-Y(1) 0-Y(2)],'k')  %kreslim trasu pres ctverce      
         hold on
         plot([X(2)+500 X(3)-500],[0-Y(2) 0-Y(3)],'k')
-        hold on
         plot([X(3) X(6)],[0-Y(3)-500 0-Y(6)+500],'k')
-        hold on
         plot([X(6)-500 X(5)+500],[0-Y(6) 0-Y(5)],'k')
-        hold on
-        plot([X(5)-500 X(4)+500],[0-Y(5) 0-Y(4)],'k')
-        hold on
+        plot([X(5)-500 X(4)+500],[0-Y(5) 0-Y(4)],'k')        
         plot([X(4) X(7)],[0-Y(4)-500 0-Y(7)+500],'k')
-        hold on
         plot([X(7)+500 X(8)-500],[0-Y(7) 0-Y(8)],'k')
-        hold on
         plot([X(8)+500 X(9)-500],[0-Y(8) 0-Y(9)],'k')
-        hold on
-        plot(ArenaLocX(2:end),0-ArenaLocY(2:end),'b')%%
-        StartEndField=DetStartEndField(ArenaLocX(2:end),ArenaLocY(2:end),X,Y); %find start and end field
+        
+        plot(ArenaLocX(2:end),0-ArenaLocY(2:end),'b') %% nakreslim posledni track, od startu k cili
+        StartEndField=DetStartEndField(ArenaLocX(2:end),ArenaLocY(2:end),X,Y); %find start and end field - uz jenom start field
         TrialType=DetTrialType([StartEndField(1) CurBox]);  %determine the type of test trial 
-        for box=1:9
-          for i=1:6
-             hold on
-             plot(AimX(box,i),0-AimY(box,i), '.k')
+        %nakreslim vsechny stan 
+        for box=1:9 %pro vsechny ctverce - louky
+          for j=1:6 %pro vsechny stany na louce             
+             plot(AimX(box,j),0-AimY(box,j), '.k')
           end
         end
 
-        hold on
-        plot(AimX(CurBox,CurGoal),0-AimY(CurBox,CurGoal), '.g')
-        for i=1:NumErr
-             hold on
+        plot(AimX(CurBox,CurGoal),0-AimY(CurBox,CurGoal), '.g') %nakreslim zene pozici ciloveho zvirete
+        plot(AimX(CurBox,CurGoal),0-AimY(CurBox,CurGoal), 'og') %udelam ho trochu vetsi 
+        for i=1:NumErr    %pro vsechny chyby         
              plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), '.r') 
+             plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), 'or') %nakreslim chybove pokusy
         end
-        hold on
-        plot([-1700 3700 3700 -1700 -1700],0-[-1700 -1700 3700 3700 -1700], 'k')
-        hold on
-        IndicatedAng=DistAng2Pos(400,Angle/360*2*3.141592653);
+        
+        plot([-1700 3700 3700 -1700 -1700],0-[-1700 -1700 3700 3700 -1700], 'k') %ctverec kolem 9 luk
+       
+        if exist('Angle','var')   %  Kamil 6.11.2018 -  Adam24_8_18_3_0.tr vubec neukazal                 
+            IndicatedAng=DistAng2Pos(400,Angle/360*2*3.141592653);           
+        else
+            IndicatedAng = [0 0 ];
+            Angle = NaN;
+        end
+        %smeru ukazani a zacatecni bod trasy
         plot([ArenaLocX(2) ArenaLocX(2)+IndicatedAng(1)],[0-ArenaLocY(2) 0-(ArenaLocY(2)+IndicatedAng(2))],'r', 'LineWidth',2)
-        hold on
-        plot(ArenaLocX(2),0-ArenaLocY(2), '.b')
-        hold on
+        plot(ArenaLocX(2),0-ArenaLocY(2), 'ob')
+        
         plot(ArenaLocX(2)+IndicatedAng(1),0-(ArenaLocY(2)+IndicatedAng(2)), '.r');
         axis equal
-        axis off
+        axis off %vymazu osy grafu, zustane je cerny ctverec
+        
         Duration=time(end)-time(2);
         Length=LengthofTrack(ArenaLocX(2:end),ArenaLocY(2:end));
         ToOptimalLength=Length/dist(ArenaLocX(2),ArenaLocY(2),AimX(CurBox,CurGoal),AimY(CurBox,CurGoal));
@@ -236,7 +222,7 @@ while feof(FileID)==0
             AngleError=AngleError+360;
         end
         %title(['Search# ' num2str(SearchNum) '   ' CurrentAim '-' Cil '   duration: ' num2str(Duration) '   length: ' num2str(Length) '   Errors: ' num2str(NumErr)])
-        title([num2str(SearchNum)])
+        title({[ '#' num2str(SearchNum) ' t' num2str(TrialType(1)) ' f' num2str(AimFound) ' e' num2str(NumErr)], Cil})
         out{2+SearchNum,1}=SearchNum;
         out{2+SearchNum,2}=CurrentAim;
         out{2+SearchNum,3}=Cil;
@@ -244,16 +230,17 @@ while feof(FileID)==0
         out{2+SearchNum,5}=Duration;
         out{2+SearchNum,6}=Length;
         out{2+SearchNum,7}=ToOptimalLength;
-        out{2+SearchNum,8}=NumErr;
-        out{2+SearchNum,9}=StartEndField(1);
-        out{2+SearchNum,10}=CurBox;%StartEndField(2);
-        out{2+SearchNum,11}=TrialType(2);
-        out{2+SearchNum,12}=TrialType(3);
-        out{2+SearchNum,13}=TrialType(4);
+        out{2+SearchNum,8}=NumErr; %'errors'
+        out{2+SearchNum,9}=StartEndField(1); %'StartField'
+        out{2+SearchNum,10}=CurBox;  %'GoalField'
+        out{2+SearchNum,11}=TrialType(2); %'N of trained pairs in sequence'
+        out{2+SearchNum,12}=TrialType(3); %'N of turns in sequence'
+        out{2+SearchNum,13}=TrialType(4); %'trial category Alena'
         out{2+SearchNum,14}=Angle;
         out{2+SearchNum,15}=RealAngle;
         out{2+SearchNum,16}=AngleError;
-        out{2+SearchNum,17}=TrialType(1);
+        out{2+SearchNum,17}=TrialType(1); %'trial category'
+        clear Angle; %kdyby treba v pristim pokuse neukazal
     end
 end
 
@@ -357,14 +344,18 @@ out{2+SearchNum+15,4}=4;
 
 for TrialType=1:12
     NumTrainedPairsTests=0; NumAimFound=0; ErrTrainedPairsTests=0; PathDevTrainedPairsTests=0; AngleErrTrainedPairsTests=0;
-
+    NumNans = 0;
     for i=1:SearchNum
         if out{2+i,17}==TrialType;  
             NumTrainedPairsTests=NumTrainedPairsTests+1;
             NumAimFound=NumAimFound+out{2+i,4};
             ErrTrainedPairsTests=ErrTrainedPairsTests+out{2+i,8};
             PathDevTrainedPairsTests=PathDevTrainedPairsTests+out{2+i,7};
-            AngleErrTrainedPairsTests=AngleErrTrainedPairsTests+abs(out{2+i,16});
+            if isnan(out{2+i,16}) %pokud treba neukazal v nejakem trialu - kamil
+               NumNans = NumNans +1; 
+            else
+               AngleErrTrainedPairsTests=AngleErrTrainedPairsTests+abs(out{2+i,16});
+            end
         end
     end
 
@@ -372,5 +363,5 @@ for TrialType=1:12
     out{2+SearchNum+3+TrialType,6}=NumAimFound/NumTrainedPairsTests;
     out{2+SearchNum+3+TrialType,7}=ErrTrainedPairsTests/NumTrainedPairsTests;
     out{2+SearchNum+3+TrialType,8}=PathDevTrainedPairsTests/NumTrainedPairsTests;
-    out{2+SearchNum+3+TrialType,9}=AngleErrTrainedPairsTests/NumTrainedPairsTests;
+    out{2+SearchNum+3+TrialType,9}=AngleErrTrainedPairsTests/(NumTrainedPairsTests-NumNans);
 end

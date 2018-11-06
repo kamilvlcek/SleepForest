@@ -20,7 +20,7 @@ out{2,9}='errorsTR'; %pocet chyb podle TR souboru
 
 
 FileNameShort = FileName; %uschovam na pozdeji
-FileName=['d:\prace\mff\data\aappSeg\skriptyForest\output\' FileName '.tr'];
+FileName=['d:\prace\mff\data\aappSeg\skriptyForest\output\' FileName ];
 
 
 FileID=fopen(FileName);
