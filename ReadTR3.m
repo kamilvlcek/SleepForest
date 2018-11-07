@@ -5,7 +5,7 @@ function out=ReadTR3(FileName)
 
 % to do: angles, summary data
 
-PlotsInFigure=15;
+PlotsInFigure=15; %kolik muze byt subplotu v jednom obrazku
 
 out{1,1}=FileName;
 out{2,1}='trial';
@@ -26,9 +26,9 @@ out{2,15}='angle real';
 out{2,16}='angle error';
 out{2,17}='trial category';
 
-FileName=['d:\prace\mff\data\aappSeg\skriptyForest\output\' FileName ];
+FullFileName=['d:\prace\mff\data\aappSeg\skriptyForest\output\' FileName ];
 
-FileID=fopen(FileName);
+FileID=fopen(FullFileName);
 
 SearchNum=0;
 NL=0;line=[];
@@ -60,6 +60,7 @@ X(8)=mean(AimX(8,:));Y(8)=mean(AimY(8,:));
 X(9)=mean(AimX(9,:));Y(9)=mean(AimY(9,:));
 
 %figure
+FIGUREDATA = {}; %tam budu shromadovat data pro obrazky, abych je pak mohl vykreslit v ruznem poradi
 
 while feof(FileID)==0
     line=fgetl(FileID);
@@ -73,7 +74,7 @@ while feof(FileID)==0
         k=strfind(line, divider);
         %tri udaje, ktere si beru tracku - udaju o pozici subjektu
         time(DLN)=str2num(line(2:k(1)-1));
-        ArenaLocX(DLN)=str2num(line(k(2)+1:k(3)-1));
+        ArenaLocX(DLN)=str2num(line(k(2)+1:k(3)-1)); %pozice subjektu = track v jednom trialu
         ArenaLocY(DLN)=str2num(line(k(3)+1:k(4)-1));
     end   
     if strfind(line,'space') %ukazani na cil
@@ -124,7 +125,7 @@ while feof(FileID)==0
     %ukonceni hledani cile 
     if length(strfind(line, 'Aim entrance:'))>0 || length(strfind(line, 'Aim not found:'))>0
 
-        SearchNum=SearchNum+1;
+        SearchNum=SearchNum+1; %cislo trialu
         
         if strfind(line, 'Aim entrance:')
             n=strfind(line, 'Aim entrance:');
@@ -155,59 +156,35 @@ while feof(FileID)==0
         elseif strcmp(CurrentAim(4),'I')
             CurBox=9;
         end        
-        CurGoal=str2num(CurrentAim(5));
-        %figure 
-        if rem(SearchNum,PlotsInFigure)==1
-            figure
-        end
-        PlotPosition=SearchNum;
-        while PlotPosition>PlotsInFigure 
-            PlotPosition=PlotPosition-PlotsInFigure;
-        end
-        subplot(3,5,PlotPosition)
-        plot([X(1)+500 X(2)-500],[0-Y(1) 0-Y(2)],'k')  %kreslim trasu pres ctverce      
-        hold on
-        plot([X(2)+500 X(3)-500],[0-Y(2) 0-Y(3)],'k')
-        plot([X(3) X(6)],[0-Y(3)-500 0-Y(6)+500],'k')
-        plot([X(6)-500 X(5)+500],[0-Y(6) 0-Y(5)],'k')
-        plot([X(5)-500 X(4)+500],[0-Y(5) 0-Y(4)],'k')        
-        plot([X(4) X(7)],[0-Y(4)-500 0-Y(7)+500],'k')
-        plot([X(7)+500 X(8)-500],[0-Y(7) 0-Y(8)],'k')
-        plot([X(8)+500 X(9)-500],[0-Y(8) 0-Y(9)],'k')
+        CurGoal=str2num(CurrentAim(5)); %cislo stanu ve ctverci s cilem
         
-        plot(ArenaLocX(2:end),0-ArenaLocY(2:end),'b') %% nakreslim posledni track, od startu k cili
         StartEndField=DetStartEndField(ArenaLocX(2:end),ArenaLocY(2:end),X,Y); %find start and end field - uz jenom start field
         TrialType=DetTrialType([StartEndField(1) CurBox]);  %determine the type of test trial 
-        %nakreslim vsechny stan 
-        for box=1:9 %pro vsechny ctverce - louky
-          for j=1:6 %pro vsechny stany na louce             
-             plot(AimX(box,j),0-AimY(box,j), '.k')
-          end
-        end
-
-        plot(AimX(CurBox,CurGoal),0-AimY(CurBox,CurGoal), '.g') %nakreslim zene pozici ciloveho zvirete
-        plot(AimX(CurBox,CurGoal),0-AimY(CurBox,CurGoal), 'og') %udelam ho trochu vetsi 
-        for i=1:NumErr    %pro vsechny chyby         
-             plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), '.r') 
-             plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), 'or') %nakreslim chybove pokusy
-        end
         
-        plot([-1700 3700 3700 -1700 -1700],0-[-1700 -1700 3700 3700 -1700], 'k') %ctverec kolem 9 luk
-       
         if exist('Angle','var')   %  Kamil 6.11.2018 -  Adam24_8_18_3_0.tr vubec neukazal                 
             IndicatedAng=DistAng2Pos(400,Angle/360*2*3.141592653);           
         else
             IndicatedAng = [0 0 ];
             Angle = NaN;
         end
-        %smeru ukazani a zacatecni bod trasy
-        plot([ArenaLocX(2) ArenaLocX(2)+IndicatedAng(1)],[0-ArenaLocY(2) 0-(ArenaLocY(2)+IndicatedAng(2))],'r', 'LineWidth',2)
-        plot(ArenaLocX(2),0-ArenaLocY(2), 'ob')
         
-        plot(ArenaLocX(2)+IndicatedAng(1),0-(ArenaLocY(2)+IndicatedAng(2)), '.r');
-        axis equal
-        axis off %vymazu osy grafu, zustane je cerny ctverec
-        
+        %naplnim figure data, abych pozdeji mohl kreslit
+        FIGUREDATA(SearchNum).X = X;
+        FIGUREDATA(SearchNum).Y = Y;
+        FIGUREDATA(SearchNum).ArenaLocX = ArenaLocX;
+        FIGUREDATA(SearchNum).ArenaLocY = ArenaLocY;
+        FIGUREDATA(SearchNum).AimX = AimX;
+        FIGUREDATA(SearchNum).AimY = AimY;
+        FIGUREDATA(SearchNum).CurBox = CurBox;
+        FIGUREDATA(SearchNum).CurGoal = CurGoal;
+        FIGUREDATA(SearchNum).ErrBox = ErrBox;
+        FIGUREDATA(SearchNum).ErrGoal = ErrGoal;
+        FIGUREDATA(SearchNum).NumErr = NumErr;
+        FIGUREDATA(SearchNum).IndicatedAng = IndicatedAng;
+        FIGUREDATA(SearchNum).TrialType = TrialType;
+        FIGUREDATA(SearchNum).AimFound = AimFound;
+        FIGUREDATA(SearchNum).Cil = Cil;
+                
         Duration=time(end)-time(2);
         Length=LengthofTrack(ArenaLocX(2:end),ArenaLocY(2:end));
         ToOptimalLength=Length/dist(ArenaLocX(2),ArenaLocY(2),AimX(CurBox,CurGoal),AimY(CurBox,CurGoal));
@@ -222,7 +199,7 @@ while feof(FileID)==0
             AngleError=AngleError+360;
         end
         %title(['Search# ' num2str(SearchNum) '   ' CurrentAim '-' Cil '   duration: ' num2str(Duration) '   length: ' num2str(Length) '   Errors: ' num2str(NumErr)])
-        title({[ '#' num2str(SearchNum) ' t' num2str(TrialType(1)) ' f' num2str(AimFound) ' e' num2str(NumErr)], Cil})
+        
         out{2+SearchNum,1}=SearchNum;
         out{2+SearchNum,2}=CurrentAim;
         out{2+SearchNum,3}=Cil;
@@ -244,6 +221,8 @@ while feof(FileID)==0
     end
 end
 
+% udelam obrazek dodatecne
+Obrazky(FIGUREDATA,PlotsInFigure,FileName);
 %summary analysis
 
 out{2+SearchNum+3,1}='trial category'; 
@@ -364,4 +343,87 @@ for TrialType=1:12
     out{2+SearchNum+3+TrialType,7}=ErrTrainedPairsTests/NumTrainedPairsTests;
     out{2+SearchNum+3+TrialType,8}=PathDevTrainedPairsTests/NumTrainedPairsTests;
     out{2+SearchNum+3+TrialType,9}=AngleErrTrainedPairsTests/(NumTrainedPairsTests-NumNans);
+end
+end
+
+function Obrazky(FD,PlotsInFigure,FileName)
+    % parametry:
+    % SearchNum - cislo trialu
+    % PlotsInFigure - kolik obrazku v obrazku
+    % X,Y - stredy jednotlivych ctvercu, X a Y, jako mean pozice stanu
+    % ArenaLocX,ArenaLocY - pozice subjektu = track v jednom trialu
+    % AimX,AimY - pozice stanu 9x6 double
+    % CurBox - cislo ctverce s cilem
+    % CurGoal - cislo stanu ve ctverci s cilem
+    % ErrBox,ErrGoal - cisla ctvercu a stanu ve ctverci s chybama - array
+    % IndicatedAng[ x y ] - smer ukazani, prevedeny na relativni souradnice 
+    % TrialType - typ testoveho trialu podle obtiznosti
+    % AimFound - jesti byl cil nalezen
+    % Cil - pojmenovani cile, napriklad KOCKU
+    for n = 1:numel(FD)
+        SearchNum = n;
+        X = FD(n).X;
+        Y = FD(n).Y;
+        ArenaLocX = FD(n).ArenaLocX;
+        ArenaLocY = FD(n).ArenaLocY;
+        AimX = FD(n).AimX;
+        AimY = FD(n).AimY;
+        CurBox = FD(n).CurBox;
+        CurGoal = FD(n).CurGoal;
+        ErrBox = FD(n).ErrBox;
+        ErrGoal = FD(n).ErrGoal;
+        NumErr = FD(n).NumErr;
+        IndicatedAng = FD(n).IndicatedAng;
+        TrialType = FD(n).TrialType;
+        AimFound = FD(n).AimFound;
+        Cil = FD(n).Cil;
+        
+        if rem(SearchNum,PlotsInFigure)==1
+            figure('Name',[ FileName ' - Plot ' num2str(ceil(SearchNum/PlotsInFigure))]);
+        end
+        PlotPosition=SearchNum;
+        while PlotPosition>PlotsInFigure 
+            PlotPosition=PlotPosition-PlotsInFigure;
+        end
+        subplot(3,5,PlotPosition)
+        plot([X(1)+500 X(2)-500],[0-Y(1) 0-Y(2)],'k')  %kreslim trasu pres ctverce      
+        hold on
+        plot([X(2)+500 X(3)-500],[0-Y(2) 0-Y(3)],'k')
+        plot([X(3) X(6)],[0-Y(3)-500 0-Y(6)+500],'k')
+        plot([X(6)-500 X(5)+500],[0-Y(6) 0-Y(5)],'k')
+        plot([X(5)-500 X(4)+500],[0-Y(5) 0-Y(4)],'k')        
+        plot([X(4) X(7)],[0-Y(4)-500 0-Y(7)+500],'k')
+        plot([X(7)+500 X(8)-500],[0-Y(7) 0-Y(8)],'k')
+        plot([X(8)+500 X(9)-500],[0-Y(8) 0-Y(9)],'k')
+
+        plot(ArenaLocX(2:end),0-ArenaLocY(2:end),'b') %% nakreslim posledni track, od startu k cili
+
+        %nakreslim vsechny stany 
+        for box=1:9 %pro vsechny ctverce - louky
+          for j=1:6 %pro vsechny stany na louce             
+             plot(AimX(box,j),0-AimY(box,j), '.k')
+          end
+        end
+
+        plot(AimX(CurBox,CurGoal),0-AimY(CurBox,CurGoal), '.g') %nakreslim zene pozici ciloveho zvirete
+        plot(AimX(CurBox,CurGoal),0-AimY(CurBox,CurGoal), 'og') %udelam ho trochu vetsi 
+        for i=1:NumErr    %pro vsechny chyby         
+             plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), '.r') 
+             plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), 'or') %nakreslim chybove pokusy
+        end
+
+        plot([-1700 3700 3700 -1700 -1700],0-[-1700 -1700 3700 3700 -1700], 'k') %ctverec kolem 9 luk
+
+
+        %smeru ukazani a zacatecni bod trasy
+        plot([ArenaLocX(2) ArenaLocX(2)+IndicatedAng(1)],[0-ArenaLocY(2) 0-(ArenaLocY(2)+IndicatedAng(2))],'r', 'LineWidth',2)
+        plot(ArenaLocX(2),0-ArenaLocY(2), 'ob')
+
+        plot(ArenaLocX(2)+IndicatedAng(1),0-(ArenaLocY(2)+IndicatedAng(2)), '.r');
+
+        title({[ '#' num2str(SearchNum) ' t' num2str(TrialType(1)) ' f' num2str(AimFound) ' e' num2str(NumErr)], Cil})
+
+        axis equal
+        axis off %vymazu osy grafu, zustane je cerny ctverec
+    end
 end
