@@ -1,4 +1,4 @@
-function out=ReadTR3(FileName)
+function out=ReadTR3(FileName,SubPlots)
 
 %compute proportion of real path length to optimal one
 %categorize tasks according to the demands/difficulty level
@@ -6,7 +6,9 @@ function out=ReadTR3(FileName)
 % to do: angles, summary data
 
 PlotsInFigure=15; %kolik muze byt subplotu v jednom obrazku
-
+if ~exist('SubPlots','var') 
+    SubPlots = 1;   %defaultne se delaji subploty
+end
 out{1,1}=FileName;
 out{2,1}='trial';
 out{2,2}='aim';
@@ -222,7 +224,7 @@ while feof(FileID)==0
 end
 
 % udelam obrazek dodatecne
-Obrazky(FIGUREDATA,PlotsInFigure,FileName);
+Obrazky(FIGUREDATA,PlotsInFigure,FileName,SubPlots);
 %summary analysis
 
 out{2+SearchNum+3,1}='trial category'; 
@@ -346,7 +348,7 @@ for TrialType=1:12
 end
 end
 
-function Obrazky(FD,PlotsInFigure,FileName)
+function Obrazky(FD,PlotsInFigure,FileName,SubPlots)
     % parametry:
     % SearchNum - cislo trialu
     % PlotsInFigure - kolik obrazku v obrazku
@@ -366,7 +368,13 @@ function Obrazky(FD,PlotsInFigure,FileName)
         ToOptimalLength = [FD(tt).ToOptimalLength];
         [~,it] = sort(ToOptimalLength); %ziskam indexy pro trideni trialu
         tt = tt(it); %seradim trialy podle relativni delky trasy
+        ColorSet = distinguishable_colors(numel(tt)); %ruzne barvy do grafu
         for n = 1:numel(tt)
+            if SubPlots
+                c = ColorSet(1,:);
+            else
+                c = ColorSet(n,:);
+            end
             m = tt(n); %skutecny index v poli DF
             SearchNum = tt(n);
             X = FD(m).X;
@@ -384,51 +392,71 @@ function Obrazky(FD,PlotsInFigure,FileName)
             TrialType = FD(m).TrialType;
             AimFound = FD(m).AimFound;
             Cil = FD(m).Cil;
-
-            if rem(n,PlotsInFigure)==1
+            
+            StartPlot = false; %jestli se maji kresli spolecne veci - vse krome tracku
+            if SubPlots == 1 && rem(n,PlotsInFigure)==1
                 figure('Name',[ FileName ' - TT ' num2str(Kategorie{kat}) ' - Plot ' num2str(ceil(n/PlotsInFigure))]);
+            elseif SubPlots == 0 && n==1 %jestli se nekresli subploty a je to prvni track
+                figure('Name',[ FileName ' - TT ' num2str(Kategorie{kat}) ]); %nastartuju obrazek
+                StartPlot = true; %a budu ho chcit inicializovat
             end
-            PlotPosition=n;
-            while PlotPosition>PlotsInFigure 
-                PlotPosition=PlotPosition-PlotsInFigure;
+            if SubPlots == 1 %mam obrazky rozdelit do ruznych subplotu
+                PlotPosition=n;
+                while PlotPosition>PlotsInFigure 
+                    PlotPosition=PlotPosition-PlotsInFigure;
+                end
+                subplot(3,5,PlotPosition)
+                StartPlot = true; %kdyz zacinam subplot chci vzdy inicializovat obrazek
             end
-            subplot(3,5,PlotPosition)
-            plot([X(1)+500 X(2)-500],[0-Y(1) 0-Y(2)],'k')  %kreslim trasu pres ctverce      
-            hold on
-            plot([X(2)+500 X(3)-500],[0-Y(2) 0-Y(3)],'k')
-            plot([X(3) X(6)],[0-Y(3)-500 0-Y(6)+500],'k')
-            plot([X(6)-500 X(5)+500],[0-Y(6) 0-Y(5)],'k')
-            plot([X(5)-500 X(4)+500],[0-Y(5) 0-Y(4)],'k')        
-            plot([X(4) X(7)],[0-Y(4)-500 0-Y(7)+500],'k')
-            plot([X(7)+500 X(8)-500],[0-Y(7) 0-Y(8)],'k')
-            plot([X(8)+500 X(9)-500],[0-Y(8) 0-Y(9)],'k')
-
-            plot(ArenaLocX(2:end),0-ArenaLocY(2:end),'b') %% nakreslim posledni track, od startu k cili
-
-            %nakreslim vsechny stany 
-            for box=1:9 %pro vsechny ctverce - louky
-              for j=1:6 %pro vsechny stany na louce             
-                 plot(AimX(box,j),0-AimY(box,j), '.k')
-              end
+            if StartPlot %veci spolecne pro vsechny subploty
+                plot([X(1)+500 X(2)-500],[0-Y(1) 0-Y(2)],'k')  %kreslim trasu pres ctverce      
+                hold on
+                plot([X(2)+500 X(3)-500],[0-Y(2) 0-Y(3)],'k')
+                plot([X(3) X(6)],[0-Y(3)-500 0-Y(6)+500],'k')
+                plot([X(6)-500 X(5)+500],[0-Y(6) 0-Y(5)],'k')
+                plot([X(5)-500 X(4)+500],[0-Y(5) 0-Y(4)],'k')        
+                plot([X(4) X(7)],[0-Y(4)-500 0-Y(7)+500],'k')
+                plot([X(7)+500 X(8)-500],[0-Y(7) 0-Y(8)],'k')
+                plot([X(8)+500 X(9)-500],[0-Y(8) 0-Y(9)],'k')
+                
+                %nakreslim vsechny stany 
+                for box=1:9 %pro vsechny ctverce - louky
+                  for j=1:6 %pro vsechny stany na louce             
+                     plot(AimX(box,j),0-AimY(box,j), '.k')
+                  end
+                end
+                
+                plot([-1700 3700 3700 -1700 -1700],0-[-1700 -1700 3700 3700 -1700], 'k') %ctverec kolem 9 luk
+                
+                %title(['Search# ' num2str(SearchNum) '   ' CurrentAim '-' Cil '   duration: ' num2str(Duration) '   length: ' num2str(Length) '   Errors: ' num2str(NumErr)])
+                if SubPlots 
+                    title({[ '#' num2str(SearchNum) ' T' num2str(TrialType(1)) ' f' num2str(AimFound) ' e' num2str(NumErr)], Cil})
+                else
+                    title([  'Type ' num2str(kat) ' f' num2str(sum([FD(tt).AimFound])) '/' num2str(numel(tt)) ] ) %  kat found/celkem
+                end
             end
 
-            plot(AimX(CurBox,CurGoal),0-AimY(CurBox,CurGoal), '.g') %nakreslim zene pozici ciloveho zvirete
-            plot(AimX(CurBox,CurGoal),0-AimY(CurBox,CurGoal), 'og') %udelam ho trochu vetsi 
+            plot(ArenaLocX(2:end),0-ArenaLocY(2:end),'Color',c) %% nakreslim posledni track, od startu k cili                       
+            plot(ArenaLocX(2),0-ArenaLocY(2), '*','Color',c,'MarkerSize',15, 'MarkerFaceColor',c) %pocatecni bod trasy            
+            plot(AimX(CurBox,CurGoal),0-AimY(CurBox,CurGoal), 'o','Color',c,'MarkerSize',10, 'MarkerFaceColor',c ) %nakreslim zelene pozici ciloveho zvirete
+            
+            if SubPlots == 0 %pokud vsechny tracky do jednoho, potrebuju cisla tracku na jejich rozliseni
+                textoffset = 150;
+                OF = [1 1; -1 -1; 1 -1; -1 1; 0 1; 1 0; 0 -1; -1 0]; %potrebuju cislicka rozhazet podle trialu - co radek to trial, sloupce jsou x a y
+                text(ArenaLocX(2)+textoffset*OF(n,1),0-ArenaLocY(2)+textoffset*OF(n,2),num2str(n),'Color',c, 'FontSize',14); %u startu
+                text(AimX(CurBox,CurGoal)+textoffset*OF(n,1),0-AimY(CurBox,CurGoal)+textoffset*OF(n,2),num2str(n),'Color',c,'FontSize',14); %u cile                
+            end
+            
             for i=1:NumErr    %pro vsechny chyby         
                  plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), '.r') 
                  plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), 'or') %nakreslim chybove pokusy
             end
 
-            plot([-1700 3700 3700 -1700 -1700],0-[-1700 -1700 3700 3700 -1700], 'k') %ctverec kolem 9 luk
-
-
-            %smeru ukazani a zacatecni bod trasy
-            plot([ArenaLocX(2) ArenaLocX(2)+IndicatedAng(1)],[0-ArenaLocY(2) 0-(ArenaLocY(2)+IndicatedAng(2))],'r', 'LineWidth',2)
-            plot(ArenaLocX(2),0-ArenaLocY(2), 'ob')
-
-            plot(ArenaLocX(2)+IndicatedAng(1),0-(ArenaLocY(2)+IndicatedAng(2)), '.r');
-            %title(['Search# ' num2str(SearchNum) '   ' CurrentAim '-' Cil '   duration: ' num2str(Duration) '   length: ' num2str(Length) '   Errors: ' num2str(NumErr)])
-            title({[ '#' num2str(SearchNum) ' t' num2str(TrialType(1)) ' f' num2str(AimFound) ' e' num2str(NumErr)], Cil})
+            %smeru ukazani 
+            plot([ArenaLocX(2) ArenaLocX(2)+IndicatedAng(1)],[0-ArenaLocY(2) 0-(ArenaLocY(2)+IndicatedAng(2))],'r', 'LineWidth',2)          
+            plot(ArenaLocX(2)+IndicatedAng(1),0-(ArenaLocY(2)+IndicatedAng(2)),'.r' ); 
+            
+            
 
             axis equal
             axis off %vymazu osy grafu, zustane je cerny ctverec
