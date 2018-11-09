@@ -27,6 +27,7 @@ out{2,14}='angle indicated';
 out{2,15}='angle real';
 out{2,16}='angle error';
 out{2,17}='trial category';
+out{2,18}='trial type Kamil';
 
 FullFileName=['d:\prace\mff\data\aappSeg\skriptyForest\output\' FileName ];
 
@@ -218,7 +219,10 @@ while feof(FileID)==0
         out{2+SearchNum,14}=Angle;
         out{2+SearchNum,15}=RealAngle;
         out{2+SearchNum,16}=AngleError;
-        out{2+SearchNum,17}=TrialType(1); %'trial category'
+        out{2+SearchNum,17}=TrialType(1); %'trial category'        
+        Kategorie = [1 2 3 3 4 4 4 5 5 5 5 5 ];%trenovane dvojice, prima trasa, 1 roh, 2 rohy, 3 a 4 rohy
+        out{2+SearchNum,18}=Kategorie(TrialType(1)); %'trial type Kamil'       
+        
         clear Angle; %kdyby treba v pristim pokuse neukazal
     end
 end
@@ -346,6 +350,21 @@ for TrialType=1:12
     out{2+SearchNum+3+TrialType,8}=PathDevTrainedPairsTests/NumTrainedPairsTests;
     out{2+SearchNum+3+TrialType,9}=AngleErrTrainedPairsTests/(NumTrainedPairsTests-NumNans);
 end
+
+%kamil - tabulka prumeru podle TrialType Kamil
+D = cell2mat(out(3:2+SearchNum,4:18)); %data trialu do matrix
+outY = 2+SearchNum+3+TrialType+2; %od ktereho radku zacim psat dal svoje data
+out{outY,1} = 'TrialType Kamil';
+for TrialTypeK = 1:5
+    out{outY + TrialTypeK,1} = TrialTypeK;
+    iD = D(:,15)==TrialTypeK; %index v D s trialtypeK
+    out{outY + TrialTypeK,5} = sum(iD); %pocet trialu
+    out{outY + TrialTypeK,6} = mean(D(iD,1)); % %nalezeni cile
+    out{outY + TrialTypeK,7} = mean(D(iD,5)); % prumerny pocet chyb
+    out{outY + TrialTypeK,8} = mean(D(iD,4)); % mean path deviation
+    out{outY + TrialTypeK,9} = nanmean(abs(D(iD,13))); % mean ABS angle error
+end
+
 end
 
 function Obrazky(FD,PlotsInFigure,FileName,SubPlots)
