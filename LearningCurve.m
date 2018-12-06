@@ -11,7 +11,7 @@ for s = 1:numel(DATA) %subjekty v cells
     SPs = cell( outdata{end,8},1); %seznam paru ctvercu jak sly za sebou
     SPpocty = zeros(outdata{end,8},1);
     Err  = zeros(outdata{end,8},1); %pocet chyb
-    Duration = zeros(outdata{end,8},1); %cas nalezeni cile
+    PathDev = zeros(outdata{end,8},1); %cas nalezeni cile
     PocetSP = zeros(outdata{end,8},1); %pocet tohoto paru ctvercu
     
     for j = 1:size(outdata,1)
@@ -29,17 +29,17 @@ for s = 1:numel(DATA) %subjekty v cells
                 SPs{SquarePaireNo} = SquarePaire;
                 SPpocty(SquarePaireNo) = SquarePairePocet + 1; %kolikate to je opakovani tehle dvojice ctvercu
                 Err(SquarePaireNo) = Err(SquarePaireNo) + ErrorsTR;
-                Duration(SquarePaireNo) =  Duration(SquarePaireNo) + outdata{j,4};
+                PathDev(SquarePaireNo) =  PathDev(SquarePaireNo) + outdata{j,5};
                 PocetSP(SquarePaireNo) = PocetSP(SquarePaireNo) + 1;
             end
         end
     end
     
-    Duration = Duration ./ PocetSP;
+    PathDev = PathDev ./ PocetSP;
     trialsmax = max(trialsmax,numel(Err));
     if ~figurestarted
         fhe = figure('Name','Learning Curve Errors', 'Position',[100, 100, 900, 400]);        
-        fhd = figure('Name','Learning Curve Duration', 'Position',[100, 100, 900, 400]);    
+        fhd = figure('Name','Learning Curve PathDev', 'Position',[100, 100, 900, 400]);    
         figurestarted = true;
     else
         
@@ -48,7 +48,7 @@ for s = 1:numel(DATA) %subjekty v cells
         plot(Err,'o-');
         hold all; %ruzne barvy
     figure(fhd); %aktivuju figure 
-        plot(Duration,'o-');    
+        plot(PathDev,'o-');    
         hold all; %ruzne barvy
     
     if trialsmax == numel(Err) %pokud je zde maximalni pocet trialu
@@ -61,11 +61,11 @@ for s = 1:numel(DATA) %subjekty v cells
         figure(fhd); set(gca,'XTickLabel',SPs); xtickangle(90); %popisky osy x
     end
     if numel(DATA) == 1
-        figure(fhe); title(strrep(outdata{1,1}, '_','\_')); 
-        figure(fhd); title(strrep(outdata{1,1}, '_','\_')); 
+        figure(fhe); title(strrep(outdata{1,1}, '_','\_')); ylabel('Learning Curve Errors');
+        figure(fhd); title(strrep(outdata{1,1}, '_','\_')); ylabel('Learning Curve PathDev');
     else
         figure(fhe); title('Errors'); 
-        figure(fhd); title('Duration'); 
+        figure(fhd); title('PathDev'); 
     end
     
     

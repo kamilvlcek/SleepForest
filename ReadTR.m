@@ -1,4 +1,5 @@
 function out=ReadTR(FileName, PlotSingleTrials,Colors)
+%vytvori data pro Learning Curve
 %ReadTR compute proportion of real path length to optimal one
 % categorize tasks according to the demands/difficulty level
 % Eduard Kelemen (c) 3/2017
@@ -16,7 +17,7 @@ out{2,1}='num';
 out{2,2}='aim';
 out{2,3}='animal';
 out{2,4}='duration';
-out{2,5}='length';
+out{2,5}='path deviation'; %length / optimal length
 out{2,6}='errors';
 out{2,7}='squairepair'; %jmeno aktualni dvojice ctvercu
 out{2,8}='squairepairno'; %cislo dvojice ctvercu v poradi
@@ -226,7 +227,7 @@ while feof(FileID)==0
         
         Duration=time(end)-time(2); %cas  nalezeni cile
         Length=LengthofTrack(ArenaLocX(2:end),ArenaLocY(2:end)); %delka cesty do cile
-        
+        OptimalLenght =dist(ArenaLocX(2),ArenaLocY(2),AimX(CurBox,CurGoal),AimY(CurBox,CurGoal)); %nejkratsi cesta do cile
         if PlotSingleTrials == 2
             title(['Search# ' num2str(SearchNum) '   ' CurrentAim '-' Cil '   duration: ' num2str(Duration) '   length: ' num2str(Length) '   Errors: ' num2str(NumErr)])
         elseif PlotSingleTrials == 1
@@ -238,7 +239,7 @@ while feof(FileID)==0
         out{2+SearchNum,2}=CurrentAim; %jmeno nelezeneho cile, napriklad AimE4
         out{2+SearchNum,3}=Cil;        %jmeno zvirete, napriklad KOCKU
         out{2+SearchNum,4}=Duration;   %cas  nalezeni cile
-        out{2+SearchNum,5}=Length;     %celka cesty do cile
+        out{2+SearchNum,5}=Length/OptimalLenght;     % odchylka od nejkratsi cesty do cile
         out{2+SearchNum,6}=NumErr;     %pocet chyb v trialu
         out{2+SearchNum,7}=SquarePaire;     %jmeno dvojice ctvercu
         out{2+SearchNum,8}=SquarePaireNo;   %cislo dvojice ctvercu 1-N

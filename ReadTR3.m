@@ -1,5 +1,5 @@
 function out=ReadTR3(FileName,SubPlots)
-
+%zpracovani dat z testu, vykresli graf a vrati vysledkovou tabulku
 %compute proportion of real path length to optimal one
 %categorize tasks according to the demands/difficulty level
 
