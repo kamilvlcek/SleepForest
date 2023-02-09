@@ -1,4 +1,5 @@
 function out=ReadTR(FileName, PlotSingleTrials,Colors)
+%ahoj edo
 %vytvori data pro Learning Curve
 %ReadTR compute proportion of real path length to optimal one
 % categorize tasks according to the demands/difficulty level
