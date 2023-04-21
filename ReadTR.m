@@ -1,4 +1,5 @@
-function out=ReadTR(FileName, PlotSingleTrials)
+function out=ReadTR(FileName, PlotSingleTrials,Colors)
+%vytvori data pro Learning Curve
 %ReadTR compute proportion of real path length to optimal one
 % categorize tasks according to the demands/difficulty level
 % Eduard Kelemen (c) 3/2017
@@ -6,13 +7,17 @@ function out=ReadTR(FileName, PlotSingleTrials)
 if ~exist('PlotSingleTrials','var')
     PlotSingleTrials = 0; %defaulne chci vykrestli obrazek vsech trialu najednou
 end %1 znamena subplot, 2 znamena opravdu sinle trials
+if ~exist('Colors','var') %pocet trialu, tedy pocet ruznych barev 
+    Colors = 150; %jist ale moc vysoka hodnota na pocet trialu   
+end
+ColorSet = distinguishable_colors(Colors); %ruzne barvy do grafu
 
 out{1,1}=FileName;
 out{2,1}='num';
 out{2,2}='aim';
 out{2,3}='animal';
 out{2,4}='duration';
-out{2,5}='length';
+out{2,5}='path deviation'; %length / optimal length
 out{2,6}='errors';
 out{2,7}='squairepair'; %jmeno aktualni dvojice ctvercu
 out{2,8}='squairepairno'; %cislo dvojice ctvercu v poradi
@@ -20,7 +25,7 @@ out{2,9}='errorsTR'; %pocet chyb podle TR souboru
 
 
 FileNameShort = FileName; %uschovam na pozdeji
-FileName=['d:\prace\mff\data\aappSeg\skriptyForest\output\' FileName '.tr'];
+FileName=['d:\prace\mff\data\aappSeg\skriptyForest\output\' FileName ];
 
 
 FileID=fopen(FileName);
@@ -156,15 +161,24 @@ while feof(FileID)==0
         % ---------- ZACINAM KRESLIT OBRAZEK ---------------     
         if ~FigureStarted || PlotSingleTrials > 0
             if PlotSingleTrials == 2
-               figure('Name',['Trial' num2str(SearchNum)]); %jeden obrazek pro kazdy trial
-            elseif PlotSingleTrials == 1
+               figure('Name',[FileNameShort ' Trial' num2str(SearchNum) ' E' num2str(NumErr)]); %jeden obrazek pro kazdy trial
+               FigureStarted = true;
+               c = [0 0 1]; %blues
+            elseif PlotSingleTrials == 1 %jeden obrazek se subploty pro kazdy trial
+                PlotsInFigure = 16;  
+                PlotNo = ceil(SearchNum/PlotsInFigure);
                 if ~FigureStarted
-                    figure('Name','Sumarni obrazek');
+                    figure('Name',['Sumarni obrazek ' FileNameShort ' #' num2str(PlotNo) ]);
                     FigureStarted = true;
                 end
-                subplot(4,4,SearchNum);
+                subplot(4,4,SearchNum-(PlotNo-1)*PlotsInFigure);
+                if rem(SearchNum,PlotsInFigure) == 0 %pokud uz posledni obrazek v plotu
+                    FigureStarted = false;
+                end
+                c = [0 0 1]; %blues
             else        
-               figure('Name','Sumarni obrazek'); %jeden obrazek pro cely tr soubor?
+               figure('Name',['Sumarni obrazek ' FileNameShort]); %jeden obrazek pro cely tr soubor?
+               FigureStarted = true;              
             end
             % pozice ctvercu
             X1=mean(AimX(1,:));Y1=mean(AimY(1,:));
@@ -198,22 +212,26 @@ while feof(FileID)==0
             axis equal
             axis off
             title(strrep(FileNameShort, '_','\_')); 
-            FigureStarted = true;
+            
         end        
         
         for i=1:NumErr            
              plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), 'or') %cervenou barvou chybne nalezene cile
-        end        
-        plot(ArenaLocX(2:end),0-ArenaLocY(2:end),'b') %tohle je jedna trasa v trialu
+        end    
+        if PlotSingleTrials == 0
+             c = ColorSet(SearchNum,:);
+        end
+        plot(ArenaLocX(2:end),0-ArenaLocY(2:end),'Color',c) %tohle je jedna trasa v trialu
+        plot(ArenaLocX(1),0-ArenaLocY(1),'*','Color',c) %startovni misto
         plot(AimX(CurBox,CurGoal),0-AimY(CurBox,CurGoal), 'og', 'MarkerSize',10) %zelenou barvou aktualni cil - nakonec, aby byl zeleny cil na povrchu
         
         Duration=time(end)-time(2); %cas  nalezeni cile
         Length=LengthofTrack(ArenaLocX(2:end),ArenaLocY(2:end)); %delka cesty do cile
-        
+        OptimalLenght =dist(ArenaLocX(2),ArenaLocY(2),AimX(CurBox,CurGoal),AimY(CurBox,CurGoal)); %nejkratsi cesta do cile
         if PlotSingleTrials == 2
             title(['Search# ' num2str(SearchNum) '   ' CurrentAim '-' Cil '   duration: ' num2str(Duration) '   length: ' num2str(Length) '   Errors: ' num2str(NumErr)])
         elseif PlotSingleTrials == 1
-            title(['# ' num2str(SearchNum)] );
+            title(['# ' num2str(SearchNum) ' E' num2str(NumErr)] );
         end
         
         % ----  vystupni tabulka  ---------------
@@ -221,7 +239,7 @@ while feof(FileID)==0
         out{2+SearchNum,2}=CurrentAim; %jmeno nelezeneho cile, napriklad AimE4
         out{2+SearchNum,3}=Cil;        %jmeno zvirete, napriklad KOCKU
         out{2+SearchNum,4}=Duration;   %cas  nalezeni cile
-        out{2+SearchNum,5}=Length;     %celka cesty do cile
+        out{2+SearchNum,5}=Length/OptimalLenght;     % odchylka od nejkratsi cesty do cile
         out{2+SearchNum,6}=NumErr;     %pocet chyb v trialu
         out{2+SearchNum,7}=SquarePaire;     %jmeno dvojice ctvercu
         out{2+SearchNum,8}=SquarePaireNo;   %cislo dvojice ctvercu 1-N
