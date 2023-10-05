@@ -1,4 +1,4 @@
-function out=ReadTR3(FileNameIn)
+function out=ReadTR3d(FileNameIn)
 
 %compute proportion of real path length to optimal one
 %categorize tasks according to the demands/difficulty level
@@ -27,7 +27,7 @@ out{2,16}='angle error';
 out{2,17}='trial category';
 
 
-FileName=['D:\Users\kelemen\Data\VRKamil\' FileNameIn '.tr'];
+FileName=['d:\prace\mff\data\aappSeg\NUDZ\results\spanav\' FileNameIn '.tr'];
 
 
 FileID=fopen(FileName);
@@ -182,7 +182,7 @@ while feof(FileID)==0
 %         CurGoal %%%
         %figure 
         if rem(SearchNum,PlotsInFigure)==1
-            figure
+            figure('position', [50, 50, 900, 700])
         end
         PlotPosition=SearchNum;
         while PlotPosition>PlotsInFigure 
@@ -233,6 +233,8 @@ while feof(FileID)==0
         hold on
         plot(ArenaLocX(2)+IndicatedAng(1),0-(ArenaLocY(2)+IndicatedAng(2)), '.r');
         axis equal
+        axis ij
+        set ( gca, 'xdir', 'reverse' )
         axis off
         Duration=time(end)-time(2);
         Length=LengthofTrack(ArenaLocX(2:end),ArenaLocY(2:end));
