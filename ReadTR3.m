@@ -27,7 +27,7 @@ out{2,16}='angle error';
 out{2,17}='trial category';
 
 
-FileName=['d:\prace\mff\data\aappSeg\NUDZ\results\spanav\' FileNameIn '.tr'];
+FileName=['D:\Users\kelemen\Data\VRKamil\' FileNameIn '.tr'];
 
 
 FileID=fopen(FileName);
@@ -35,7 +35,8 @@ FileID=fopen(FileName);
 SearchNum=0;
 NL=0;line=[];
 %while strcmp(line(1:6),' 0.000')==0
-while isempty(strfind(line, 'Ukaz na'));
+% while isempty(strfind(line, 'Ukaz na'));
+while isempty(strfind(line, 'Ukazte na'));
     line=fgetl(FileID);  %%%
     NL=NL+1;
     if strfind(line, 'Aim position')
@@ -51,7 +52,8 @@ while isempty(strfind(line, 'Ukaz na'));
         StartLocY=str2num(line(bb+2:bc-1));
     end                                             %%%
 end
-n=strfind(line, 'text:Najdi');
+% n=strfind(line, 'text:Najdi');
+n=strfind(line, 'text:Najdete');
 Cil=line(n+11:end-2);
 DLN=0;
 firstdataline=0;
@@ -87,7 +89,8 @@ while feof(FileID)==0
         StartLocX=str2num(line(ba+1:bb-1));
         StartLocY=str2num(line(bb+2:bc-1));
     end                                             %%%
-    if strfind(line, 'text:Najdi')
+%     if strfind(line, 'text:Najdi')
+    if strfind(line, 'text:Najdete')
         time=[];
         ArenaLocX=[];
         ArenaLocY=[];
@@ -95,7 +98,8 @@ while feof(FileID)==0
         NumErr=0;
         ErrBox=[];
         ErrGoal=[];
-        n=strfind(line, 'text:Najdi');
+%         n=strfind(line, 'text:Najdi');
+        n=strfind(line, 'text:Najdete');
         Cil=line(n+11:end-2);
     end 
 %     if strfind(line, 'Avoid entrance:') %%%
@@ -208,8 +212,9 @@ while feof(FileID)==0
         plot(ArenaLocX(2:end),0-ArenaLocY(2:end),'b')%%
 %         ArenaLocX %%%
 %         X %%%
-        StartEndField=DetStartEndField(ArenaLocX(2:end),ArenaLocY(2:end),AimX,AimY); %find start and end field
-        TrialType=DetTrialType([StartEndField(1) CurBox]);  %determine the type of test trial 
+        StartEndField=DetStartEndField(ArenaLocX(2:end),ArenaLocY(2:end),AimX,AimY)%; %find start and end field
+        CurBox
+        TrialType=DetTrialType([StartEndField(1) CurBox])%;  %determine the type of test trial 
         for box=1:9
 %           for i=1:6
 %              hold on
