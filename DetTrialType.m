@@ -4,16 +4,16 @@ function TrialType=DetTrialType(StEnd)
 
 TrialType=0;
 if (any(1==StEnd)&any(2==StEnd))||(any(2==StEnd)&any(3==StEnd))||(any(3==StEnd)&any(6==StEnd))||(any(5==StEnd)&any(6==StEnd))||(any(5==StEnd)&any(4==StEnd))||(any(4==StEnd)&any(7==StEnd))||(any(7==StEnd)&any(8==StEnd))||(any(8==StEnd)&any(9==StEnd))
-   TrialType=[1,1,0,1]; %trained pair 
+   TrialType=[1,1,0,1]; %trained pair good
 end
 if (any(1==StEnd)&any(3==StEnd))||(any(4==StEnd)&any(6==StEnd))||(any(7==StEnd)&any(9==StEnd))
-   TrialType=[2,2,0,2]; %sequence of two trained pairs, straight 
+   TrialType=[2,2,0,2]; %sequence of two trained pairs, straight good
 end
 if (any(2==StEnd)&any(6==StEnd))||(any(3==StEnd)&any(5==StEnd))||(any(5==StEnd)&any(7==StEnd))||(any(4==StEnd)&any(8==StEnd))
-   TrialType=[3,2,1,3]; %sequence of two trained pairs, with a turn 
+   TrialType=[3,2,1,3]; %sequence of two trained pairs, with a turn good
 end
 if (any(1==StEnd)&any(6==StEnd))||(any(3==StEnd)&any(4==StEnd))||(any(6==StEnd)&any(7==StEnd))||(any(4==StEnd)&any(9==StEnd))
-   TrialType=[4,3,1,3]; %sequence of three trained pairs, with one turn 
+   TrialType=[4,3,1,3]; %sequence of three trained pairs, with one turn good
 end
 if (any(2==StEnd)&any(5==StEnd))||(any(5==StEnd)&any(8==StEnd))
    TrialType=[5,3,2,4]; %sequence of three trained pairs, with two turns 

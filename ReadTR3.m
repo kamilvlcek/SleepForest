@@ -1,4 +1,4 @@
-function out=ReadTR3d(FileNameIn)
+function out=ReadTR3(FileNameIn)
 
 %compute proportion of real path length to optimal one
 %categorize tasks according to the demands/difficulty level
@@ -6,37 +6,42 @@ function out=ReadTR3d(FileNameIn)
 % to do: angles, summary data
 
 PlotsInFigure=15;
+NumTr(3,2)=zeros;
+NumAimFound(3,2)=zeros;
+TotNumErr(3,2)=zeros;
+SumPathDev(3,2)=zeros;
+SumAbsAngErr(3,2)=zeros;
 
 out{1,1}=FileNameIn;
 out{2,1}='trial';
 out{2,2}='aim';
 out{2,3}='animal';
-out{2,4}='aim found';
-out{2,5}='duration';
-out{2,6}='length';
-out{2,7}='path deviaton from optimal';
-out{2,8}='errors';
-out{2,9}='StartField';
-out{2,10}='GoalField';
-out{2,11}='N of trained pairs in sequence';
-out{2,12}='N of turns in sequence';
-out{2,13}='trial category Alena';
-out{2,14}='angle indicated';
-out{2,15}='angle real';
-out{2,16}='angle error';
-out{2,17}='trial category';
+out{2,4}='North marked';
+out{2,5}='Statues present';
+out{2,6}='aim found';
+out{2,7}='duration';
+out{2,8}='length';
+out{2,9}='path deviaton from optimal';
+out{2,10}='errors';
+out{2,11}='StartField';
+out{2,12}='GoalField';
+out{2,13}='N of trained pairs in sequence';
+out{2,14}='N of turns in sequence';
+out{2,15}='trial type';
+out{2,16}='angle indicated';
+out{2,17}='angle real';
+out{2,18}='angle error';
 
-
-FileName=['D:\Users\kelemen\Data\VRKamil\' FileNameIn '.tr'];
+FileName=['d:\prace\mff\data\aappSeg\NUDZ\results\spanav\' FileNameIn '.tr'];
+%FileName=['D:\Users\kelemen\Data\VRKamil\' FileNameIn '.tr'];
 
 
 FileID=fopen(FileName);
 
 SearchNum=0;
 NL=0;line=[];
-%while strcmp(line(1:6),' 0.000')==0
-% while isempty(strfind(line, 'Ukaz na'));
-while isempty(strfind(line, 'Ukazte na'));
+
+while isempty(strfind(line, 'KOLO')) 
     line=fgetl(FileID);  %%%
     NL=NL+1;
     if strfind(line, 'Aim position')
@@ -44,22 +49,25 @@ while isempty(strfind(line, 'Ukazte na'));
         AimX=Aim{1}; 
         AimY=Aim{2}; 
     end
-    if strfind(line,'Avatar location changed:')     %%%
-        ba=strfind(line, '[');
-        bb=strfind(line, ',');
-        bc=strfind(line, ']');
-        StartLocX=str2num(line(ba+1:bb-1));
-        StartLocY=str2num(line(bb+2:bc-1));
-    end                                             %%%
+%     if strfind(line,'Avatar location changed:')     %%%
+%         ba=strfind(line, '[');
+%         bb=strfind(line, ',');
+%         bc=strfind(line, ']');
+%         StartLocX=str2num(line(ba+1:bb-1));
+%         StartLocY=str2num(line(bb+2:bc-1));
+%     end                                             %%%
+%     if strfind(line, 'Orientation Marks Shown') %%%
+%         PosNA=strfind(line, 'North Compas');
+%         NorthArrow=str2num(line(PosNA+13));
+%         PosSt=strfind(line, 'Statues');
+%         Statues=str2num(line(PosSt+10));
+%     end
 end
-% n=strfind(line, 'text:Najdi');
-n=strfind(line, 'text:Najdete');
-Cil=line(n+11:end-2);
+% n=strfind(line, 'text:Najdete'); % WHy is this here?
+% Cil=line(n+11:end-2); % Why is this here?
 DLN=0;
 firstdataline=0;
 NumErr=0;
-
-%figure
 
 while feof(FileID)==0
     line=fgetl(FileID);
@@ -75,83 +83,70 @@ while feof(FileID)==0
         ArenaLocX(DLN)=str2num(line(k(2)+1:k(3)-1));
         ArenaLocY(DLN)=str2num(line(k(3)+1:k(4)-1));
     end   
-    if strfind(line,'space')
-        Angle=str2num(line(k(7)+1:k(8)-1));
-        Angle=rem(Angle,360);
-        if Angle<0
-            Angle=Angle+360;
-        end
-    end 
     if strfind(line,'Avatar location changed:')     %%%
         ba=strfind(line, '[');
         bb=strfind(line, ',');
         bc=strfind(line, ']');
         StartLocX=str2num(line(ba+1:bb-1));
         StartLocY=str2num(line(bb+2:bc-1));
-    end                                             %%%
-%     if strfind(line, 'text:Najdi')
+    end    
+    if strfind(line, 'Orientation Marks Shown') %%%
+        PosNA=strfind(line, 'North Compas');
+        NorthArrow=str2num(line(PosNA+13));
+        PosSt=strfind(line, 'Statues');
+        Statues=str2num(line(PosSt+10));
+        if NorthArrow==1 && Statues==0
+            Cues=1;
+        end
+        if NorthArrow==0 && Statues==1
+            Cues=2;
+        end
+    end
+    if strfind(line, 'Aim search:')
+        n=strfind(line, 'Aim search:');
+        CurrentAim=line(n+11:n+14); %%%
+    end
+    if strfind(line,'Ukazte na')
+        stav=1; %1-ukazovani, 2-hledani
+    end 
+    if contains(line,'space') && stav==1
+        Angle=str2num(line(k(7)+1:k(8)-1));
+        Angle=rem(Angle,360);
+        if Angle<0
+            Angle=Angle+360;
+        end
+    end 
+                                        %%%
     if strfind(line, 'text:Najdete')
+        stav=2;
         time=[];
         ArenaLocX=[];
         ArenaLocY=[];
         DLN=0;
         NumErr=0;
-        ErrBox=[];
-        ErrGoal=[];
-%         n=strfind(line, 'text:Najdi');
+        ErrLocX=[];
+        ErrLocY=[];
         n=strfind(line, 'text:Najdete');
-        Cil=line(n+11:end-2);
+        Cil=line(n+13:end-2);
     end 
-%     if strfind(line, 'Avoid entrance:') %%%
-%         NumErr=NumErr+1;
-%         n=strfind(line, 'Avoid entrance:');
-%         ErrAim=line(n+15:n+19);
-%         if strcmp(ErrAim(4),'A')
-%             ErrBox(NumErr)=1;
-%         end
-%         if strcmp(ErrAim(4),'B')
-%             ErrBox(NumErr)=2;
-%         end
-%         if strcmp(ErrAim(4),'C')
-%             ErrBox(NumErr)=3;
-%         end
-%         if strcmp(ErrAim(4),'D')
-%             ErrBox(NumErr)=4;
-%         end
-%         if strcmp(ErrAim(4),'E')
-%             ErrBox(NumErr)=5;
-%         end
-%         if strcmp(ErrAim(4),'F')
-%             ErrBox(NumErr)=6;
-%         end        
-%         if strcmp(ErrAim(4),'G')
-%             ErrBox(NumErr)=7;
-%         end
-%         if strcmp(ErrAim(4),'H')
-%             ErrBox(NumErr)=8;
-%         end
-%         if strcmp(ErrAim(4),'I')
-%             ErrBox(NumErr)=9;
-%         end        
-%         ErrGoal(NumErr)=str2num(ErrAim(5));
-%     end
 
-    
-    
-    if length(strfind(line, 'Aim entrance:'))>0 || length(strfind(line, 'Aim not found:'))>0
 
+    if strfind(line, 'CHYBA !')
+      NumErr=NumErr+1;
+      ErrLocX(NumErr)=ArenaLocX(DLN);
+      ErrLocY(NumErr)=ArenaLocY(DLN);
+    end
+
+    if length(strfind(line, 'VYBORNE !'))>0 || length(strfind(line, 'NEPOVEDLO SE VAM NAJIT CIL'))>0
         SearchNum=SearchNum+1;
-        
-        if strfind(line, 'Aim entrance:')
-            n=strfind(line, 'Aim entrance:');
-            CurrentAim=line(n+13:n+17); %%%
+        if strfind(line, 'VYBORNE !')
             AimFound=1;
         end
-        if strfind(line, 'Aim not found:')
-            n=strfind(line, 'Aim not found:');
-            CurrentAim=line(n+14:n+18); %%%
+        if strfind(line, 'NEPOVEDLO SE VAM NAJIT CIL')
             AimFound=0;
         end
+     
+
         if strcmp(CurrentAim(4),'A')
             CurBox=1; %%%
         end
@@ -179,11 +174,7 @@ while feof(FileID)==0
         if strcmp(CurrentAim(4),'I')
             CurBox=9;
         end      
-%         CurrentAim %%%
-%         CurrentAim(4) %%%
-%         CurrentAim(5) %%%
-        CurGoal=str2num(CurrentAim(5));
-%         CurGoal %%%
+
         %figure 
         if rem(SearchNum,PlotsInFigure)==1
             figure('position', [50, 50, 900, 700])
@@ -210,23 +201,21 @@ while feof(FileID)==0
         plot([AimX(8)+500 AimX(9)-500],[0-AimY(8) 0-AimY(9)],'k')
         hold on
         plot(ArenaLocX(2:end),0-ArenaLocY(2:end),'b')%%
-%         ArenaLocX %%%
-%         X %%%
-        StartEndField=DetStartEndField(ArenaLocX(2:end),ArenaLocY(2:end),AimX,AimY)%; %find start and end field
-        CurBox
-        TrialType=DetTrialType([StartEndField(1) CurBox])%;  %determine the type of test trial 
+
+        StartEndField=DetStartEndField(ArenaLocX(2:end),ArenaLocY(2:end),AimX,AimY); %find start and end field
+
+        TrialType=DetTrialType([StartEndField(1) CurBox]);  %determine the type of test trial 
+        TrialTypeKE=DetTrialTypeKamilEliska([StartEndField(1) CurBox]);  %determine the type of test trial 
         for box=1:9
-%           for i=1:6
-%              hold on
              plot(AimX(box),0-AimY(box), '.k')
-%           end
         end
 
         hold on
         plot(AimX(CurBox),0-AimY(CurBox), '.g') %%%
         for i=1:NumErr
              hold on
-             plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), '.r') 
+             plot(ErrLocX(i), 0-ErrLocY(i),'.r')
+%              plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), '.r') 
         end
         hold on
         plot([-1700 3700 3700 -1700 -1700],0-[-1700 -1700 3700 3700 -1700], 'k')
@@ -243,12 +232,7 @@ while feof(FileID)==0
         axis off
         Duration=time(end)-time(2);
         Length=LengthofTrack(ArenaLocX(2:end),ArenaLocY(2:end));
-%         ArenaLocX(2) %%%
-%         ArenaLocY(2) %%%
-%         CurBox %%%
-%         CurGoal %%%
-%         AimX(CurBox,CurGoal) %%%
-%         AimY(CurBox,CurGoal) %%%
+
         ToOptimalLength=Length/dist(ArenaLocX(2),ArenaLocY(2),ArenaLocX(DLN),ArenaLocY(DLN));  %%%
 %       ToOptimalLength=Length/dist(ArenaLocX(2),ArenaLocY(2),AimX(CurBox,CurGoal),AimY(CurBox,CurGoal));  %%%
         %ToOptimalLength=Length/dist(ArenaLocX(2),ArenaLocY(2),ArenaLocX(end),ArenaLocY(end));
@@ -270,137 +254,124 @@ while feof(FileID)==0
         out{2+SearchNum,1}=SearchNum;
         out{2+SearchNum,2}=CurrentAim;
         out{2+SearchNum,3}=Cil;
-        out{2+SearchNum,4}=AimFound;
-        out{2+SearchNum,5}=Duration;
-        out{2+SearchNum,6}=Length;
-        out{2+SearchNum,7}=ToOptimalLength;
-        out{2+SearchNum,8}=NumErr;
-        out{2+SearchNum,9}=StartEndField(1);
-        out{2+SearchNum,10}=CurBox;%StartEndField(2);
-        out{2+SearchNum,11}=TrialType(2);
-        out{2+SearchNum,12}=TrialType(3);
-        out{2+SearchNum,13}=TrialType(4);
-        out{2+SearchNum,14}=Angle;
-        out{2+SearchNum,15}=RealAngle;
-        out{2+SearchNum,16}=AngleError;
-        out{2+SearchNum,17}=TrialType(1);
+        out{2+SearchNum,4}=NorthArrow;
+        out{2+SearchNum,5}=Statues;
+        out{2+SearchNum,6}=AimFound;
+        out{2+SearchNum,7}=Duration;
+        out{2+SearchNum,8}=Length;
+        out{2+SearchNum,9}=ToOptimalLength;
+        out{2+SearchNum,10}=NumErr;
+        out{2+SearchNum,11}=StartEndField(1);
+        out{2+SearchNum,12}=CurBox;
+        out{2+SearchNum,13}=TrialType(2);
+        out{2+SearchNum,14}=TrialType(3);
+        out{2+SearchNum,15}=TrialTypeKE;
+        out{2+SearchNum,16}=Angle;
+        out{2+SearchNum,17}=RealAngle;
+        out{2+SearchNum,18}=AngleError;
+        
+        NumTr(TrialTypeKE,Cues)=NumTr(TrialTypeKE,Cues)+1;
+        NumAimFound(TrialTypeKE,Cues)=NumAimFound(TrialTypeKE,Cues)+AimFound;
+        TotNumErr(TrialTypeKE,Cues)=TotNumErr(TrialTypeKE,Cues)+NumErr;
+        SumPathDev(TrialTypeKE,Cues)=SumPathDev(TrialTypeKE,Cues)+ToOptimalLength;
+        SumAbsAngErr(TrialTypeKE,Cues)=SumAbsAngErr(TrialTypeKE,Cues)+abs(AngleError);
     end
 end
 
 %summary analysis
 
-out{2+SearchNum+3,1}='trial category'; 
-out{2+SearchNum+3,2}='description'; 
-out{2+SearchNum+3,3}='N of trained pairs in sequence'; 
-out{2+SearchNum+3,4}='N of turns in sequence';
-out{2+SearchNum+3,5}='N'; %
-out{2+SearchNum+3,6}='% aim found';%
-out{2+SearchNum+3,7}='mean N errors';% 'Angle Error';
-out{2+SearchNum+3,8}='mean path deviation';
-out{2+SearchNum+3,9}='mean ABS angle error';
+out{2+SearchNum+3,2}='landmarks';
+out{2+SearchNum+3,3}='trial type';
+out{2+SearchNum+3,4}='N of trained pairs in sequence'; 
+out{2+SearchNum+3,5}='N of turns in sequence';
+out{2+SearchNum+3,6}='N'; %
+out{2+SearchNum+3,7}='prop. aim found';%
+out{2+SearchNum+3,8}='mean N errors';% 'Angle Error';
+out{2+SearchNum+3,9}='mean path deviation';
+out{2+SearchNum+3,10}='mean Absolute angle error';
 
-%memory for trained pairs (trial category 1) beginning
-% NumTrainedPairsTests=0; NumAimFound=0; ErrTrainedPairsTests=0; PathDevTrainedPairsTests=0; AngleErrTrainedPairsTests=0;
+
+out{2+SearchNum+4,2}='north only';
+out{2+SearchNum+4,3}='1';
+out{2+SearchNum+4,4}='1'; 
+out{2+SearchNum+4,5}='0';
+out{2+SearchNum+4,6}=NumTr(1,1);
+out{2+SearchNum+4,7}=NumAimFound(1,1)/NumTr(1,1);
+out{2+SearchNum+4,8}=TotNumErr(1,1)/NumTr(1,1);
+out{2+SearchNum+4,9}=SumPathDev(1,1)/NumTr(1,1);
+out{2+SearchNum+4,10}=SumAbsAngErr(1,1)/NumTr(1,1);
+
+out{2+SearchNum+5,2}='north only';
+out{2+SearchNum+5,3}='2';
+out{2+SearchNum+5,4}='2'; 
+out{2+SearchNum+5,5}='0';
+out{2+SearchNum+5,6}=NumTr(2,1);
+out{2+SearchNum+5,7}=NumAimFound(2,1)/NumTr(2,1);
+out{2+SearchNum+5,8}=TotNumErr(2,1)/NumTr(2,1);
+out{2+SearchNum+5,9}=SumPathDev(2,1)/NumTr(2,1);
+out{2+SearchNum+5,10}=SumAbsAngErr(2,1)/NumTr(2,1);
+
+out{2+SearchNum+6,2}='north only';
+out{2+SearchNum+6,3}='3';
+out{2+SearchNum+6,4}='>1'; 
+out{2+SearchNum+6,5}='>0';
+out{2+SearchNum+6,6}=NumTr(3,1);
+out{2+SearchNum+6,7}=NumAimFound(3,1)/NumTr(3,1);
+out{2+SearchNum+6,8}=TotNumErr(3,1)/NumTr(3,1);
+out{2+SearchNum+6,9}=SumPathDev(3,1)/NumTr(3,1);
+out{2+SearchNum+6,10}=SumAbsAngErr(3,1)/NumTr(3,1);
+
+out{2+SearchNum+7,2}='statues only';
+out{2+SearchNum+7,3}='1';
+out{2+SearchNum+7,4}='1'; 
+out{2+SearchNum+7,5}='0';
+out{2+SearchNum+7,6}=NumTr(1,2);
+out{2+SearchNum+7,7}=NumAimFound(1,2)/NumTr(1,2);
+out{2+SearchNum+7,8}=TotNumErr(1,2)/NumTr(1,2);
+out{2+SearchNum+7,9}=SumPathDev(1,2)/NumTr(1,2);
+out{2+SearchNum+7,10}=SumAbsAngErr(1,2)/NumTr(1,2);
+
+out{2+SearchNum+8,2}='statues only';
+out{2+SearchNum+8,3}='2';
+out{2+SearchNum+8,4}='2'; 
+out{2+SearchNum+8,5}='0';
+out{2+SearchNum+8,6}=NumTr(2,2);
+out{2+SearchNum+8,7}=NumAimFound(2,2)/NumTr(2,2);
+out{2+SearchNum+8,8}=TotNumErr(2,2)/NumTr(2,2);
+out{2+SearchNum+8,9}=SumPathDev(2,2)/NumTr(2,2);
+out{2+SearchNum+8,10}=SumAbsAngErr(2,2)/NumTr(2,2);
+
+out{2+SearchNum+9,2}='statues only';
+out{2+SearchNum+9,3}='3';
+out{2+SearchNum+9,4}='>1'; 
+out{2+SearchNum+9,5}='>0';
+out{2+SearchNum+9,6}=NumTr(3,2);
+out{2+SearchNum+9,7}=NumAimFound(3,2)/NumTr(3,2);
+out{2+SearchNum+9,8}=TotNumErr(3,2)/NumTr(3,2);
+out{2+SearchNum+9,9}=SumPathDev(3,2)/NumTr(3,2);
+out{2+SearchNum+9,10}=SumAbsAngErr(3,2)/NumTr(3,2);
+
+
+
+
 % 
-% for i=1:SearchNum
-%    if out{2+i,17}==1;  
-%        NumTrainedPairsTests=NumTrainedPairsTests+1;
-%        NumAimFound=NumAimFound+out{2+i,4};
-%        ErrTrainedPairsTests=ErrTrainedPairsTests+out{2+i,8};
-%        PathDevTrainedPairsTests=PathDevTrainedPairsTests+out{2+i,7};
-%        AngleErrTrainedPairsTests=AngleErrTrainedPairsTests+abs(out{2+i,16});
-%    end
+% 
+% for TrialType=1:12
+%     NumTrainedPairsTests=0; NumAimFound=0; ErrTrainedPairsTests=0; PathDevTrainedPairsTests=0; AngleErrTrainedPairsTests=0;
+% 
+%     for i=1:SearchNum
+%         if out{2+i,17}==TrialType;  
+%             NumTrainedPairsTests=NumTrainedPairsTests+1;
+%             NumAimFound=NumAimFound+out{2+i,4};
+%             ErrTrainedPairsTests=ErrTrainedPairsTests+out{2+i,8};
+%             PathDevTrainedPairsTests=PathDevTrainedPairsTests+out{2+i,7};
+%             AngleErrTrainedPairsTests=AngleErrTrainedPairsTests+abs(out{2+i,16});
+%         end
+%     end
+% 
+%     out{2+SearchNum+3+TrialType,5}=NumTrainedPairsTests;
+%     out{2+SearchNum+3+TrialType,6}=NumAimFound/NumTrainedPairsTests;
+%     out{2+SearchNum+3+TrialType,7}=ErrTrainedPairsTests/NumTrainedPairsTests;
+%     out{2+SearchNum+3+TrialType,8}=PathDevTrainedPairsTests/NumTrainedPairsTests;
+%     out{2+SearchNum+3+TrialType,9}=AngleErrTrainedPairsTests/NumTrainedPairsTests;
 % end
-% 
-% out{2+SearchNum+4,1}='1';
-% out{2+SearchNum+4,2}='memory for trained pairs';
-% out{2+SearchNum+4,3}='1';
-% out{2+SearchNum+4,4}='0';
-% out{2+SearchNum+4,5}=NumTrainedPairsTests;
-% out{2+SearchNum+4,6}=NumAimFound/NumTrainedPairsTests;
-% out{2+SearchNum+4,7}=ErrTrainedPairsTests/NumTrainedPairsTests;
-% out{2+SearchNum+4,8}=PathDevTrainedPairsTests/NumTrainedPairsTests;
-% out{2+SearchNum+4,9}=AngleErrTrainedPairsTests/NumTrainedPairsTests;
-
-%memory for trained pairs end
-
-out{2+SearchNum+4,1}=1;
-out{2+SearchNum+4,2}='trained pair';
-out{2+SearchNum+4,3}=1;
-out{2+SearchNum+4,4}=0;
-
-out{2+SearchNum+5,1}=2;
-out{2+SearchNum+5,2}='sequence of two trained pairs, straight';
-out{2+SearchNum+5,3}=2;
-out{2+SearchNum+5,4}=0;
-
-out{2+SearchNum+6,1}=3;
-out{2+SearchNum+6,2}='sequence of two trained pairs, with a turn';
-out{2+SearchNum+6,3}=2;
-out{2+SearchNum+6,4}=1;
-
-out{2+SearchNum+7,1}=4;
-out{2+SearchNum+7,2}='sequence of three trained pairs, with one turn';
-out{2+SearchNum+7,3}=3;
-out{2+SearchNum+7,4}=1;
-
-out{2+SearchNum+8,1}=5;
-out{2+SearchNum+8,2}='sequence of three trained pairs, with two turns';
-out{2+SearchNum+8,3}=3;
-out{2+SearchNum+8,4}=2;
-
-out{2+SearchNum+9,1}=6;
-out{2+SearchNum+9,2}='sequence of four trained pairs, (always with two turns)';
-out{2+SearchNum+9,3}=4;
-out{2+SearchNum+9,4}=2;
-
-out{2+SearchNum+10,1}=7;
-out{2+SearchNum+10,2}='sequence of five trained pairs, with two turns';
-out{2+SearchNum+10,3}=5;
-out{2+SearchNum+10,4}=2;
-
-out{2+SearchNum+11,1}=8;
-out{2+SearchNum+11,2}='sequence of five trained pairs, with three turns';
-out{2+SearchNum+11,3}=5;
-out{2+SearchNum+11,4}=3;
-
-out{2+SearchNum+12,1}=9;
-out{2+SearchNum+12,2}='sequence of six trained pairs, with three turns';
-out{2+SearchNum+12,3}=6;
-out{2+SearchNum+12,4}=3;
-
-out{2+SearchNum+13,1}=10;
-out{2+SearchNum+13,2}='sequence of six trained pairs, with four turns';
-out{2+SearchNum+13,3}=6;
-out{2+SearchNum+13,4}=4;
-
-out{2+SearchNum+14,1}=11;
-out{2+SearchNum+14,2}='sequence of seven trained pairs, (always with four turns)';
-out{2+SearchNum+14,3}=7;
-out{2+SearchNum+14,4}=4;
-
-out{2+SearchNum+15,1}=12;
-out{2+SearchNum+15,2}='sequence of eight trained pairs, (always with four turns)';
-out{2+SearchNum+15,3}=8;
-out{2+SearchNum+15,4}=4;
-
-
-for TrialType=1:12
-    NumTrainedPairsTests=0; NumAimFound=0; ErrTrainedPairsTests=0; PathDevTrainedPairsTests=0; AngleErrTrainedPairsTests=0;
-
-    for i=1:SearchNum
-        if out{2+i,17}==TrialType;  
-            NumTrainedPairsTests=NumTrainedPairsTests+1;
-            NumAimFound=NumAimFound+out{2+i,4};
-            ErrTrainedPairsTests=ErrTrainedPairsTests+out{2+i,8};
-            PathDevTrainedPairsTests=PathDevTrainedPairsTests+out{2+i,7};
-            AngleErrTrainedPairsTests=AngleErrTrainedPairsTests+abs(out{2+i,16});
-        end
-    end
-
-    out{2+SearchNum+3+TrialType,5}=NumTrainedPairsTests;
-    out{2+SearchNum+3+TrialType,6}=NumAimFound/NumTrainedPairsTests;
-    out{2+SearchNum+3+TrialType,7}=ErrTrainedPairsTests/NumTrainedPairsTests;
-    out{2+SearchNum+3+TrialType,8}=PathDevTrainedPairsTests/NumTrainedPairsTests;
-    out{2+SearchNum+3+TrialType,9}=AngleErrTrainedPairsTests/NumTrainedPairsTests;
-end
