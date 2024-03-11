@@ -5,6 +5,7 @@ function out=ReadTR3(FileNameIn)
 
 % to do: angles, summary data
 
+SearchAnimal=0; % added March 6 2024
 PlotsInFigure=15;
 NumTr(3,2)=zeros;
 NumAimFound(3,2)=zeros;
@@ -49,22 +50,8 @@ while isempty(strfind(line, 'KOLO'))
         AimX=Aim{1}; 
         AimY=Aim{2}; 
     end
-%     if strfind(line,'Avatar location changed:')     %%%
-%         ba=strfind(line, '[');
-%         bb=strfind(line, ',');
-%         bc=strfind(line, ']');
-%         StartLocX=str2num(line(ba+1:bb-1));
-%         StartLocY=str2num(line(bb+2:bc-1));
-%     end                                             %%%
-%     if strfind(line, 'Orientation Marks Shown') %%%
-%         PosNA=strfind(line, 'North Compas');
-%         NorthArrow=str2num(line(PosNA+13));
-%         PosSt=strfind(line, 'Statues');
-%         Statues=str2num(line(PosSt+10));
-%     end
 end
-% n=strfind(line, 'text:Najdete'); % WHy is this here?
-% Cil=line(n+11:end-2); % Why is this here?
+
 DLN=0;
 firstdataline=0;
 NumErr=0;
@@ -128,6 +115,7 @@ while feof(FileID)==0
         ErrLocY=[];
         n=strfind(line, 'text:Najdete');
         Cil=line(n+13:end-2);
+        SearchAnimal=1; % added March 6 2024
     end 
 
 
@@ -137,12 +125,13 @@ while feof(FileID)==0
       ErrLocY(NumErr)=ArenaLocY(DLN);
     end
 
-    if length(strfind(line, 'VYBORNE !'))>0 || length(strfind(line, 'NEPOVEDLO SE VAM NAJIT CIL'))>0
+    if (length(strfind(line, 'VYBORNE !'))>0 || length(strfind(line, 'NEPOVEDLO SE VAM NAJIT CIL'))>0) && SearchAnimal==1 % modified March 6 2024
+        SearchAnimal=0; % added March 6 2024
         SearchNum=SearchNum+1;
-        if strfind(line, 'VYBORNE !')
-            AimFound=1;
+        if strfind(line, 'VYBORNE !') 
+            AimFound=1; 
         end
-        if strfind(line, 'NEPOVEDLO SE VAM NAJIT CIL')
+        if strfind(line, 'NEPOVEDLO SE VAM NAJIT CIL') 
             AimFound=0;
         end
      
@@ -215,7 +204,6 @@ while feof(FileID)==0
         for i=1:NumErr
              hold on
              plot(ErrLocX(i), 0-ErrLocY(i),'.r')
-%              plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), '.r') 
         end
         hold on
         plot([-1700 3700 3700 -1700 -1700],0-[-1700 -1700 3700 3700 -1700], 'k')
@@ -233,11 +221,8 @@ while feof(FileID)==0
         Duration=time(end)-time(2);
         Length=LengthofTrack(ArenaLocX(2:end),ArenaLocY(2:end));
 
-        ToOptimalLength=Length/dist(ArenaLocX(2),ArenaLocY(2),ArenaLocX(DLN),ArenaLocY(DLN));  %%%
-%       ToOptimalLength=Length/dist(ArenaLocX(2),ArenaLocY(2),AimX(CurBox,CurGoal),AimY(CurBox,CurGoal));  %%%
-        %ToOptimalLength=Length/dist(ArenaLocX(2),ArenaLocY(2),ArenaLocX(end),ArenaLocY(end));
+        ToOptimalLength=Length/dist(ArenaLocX(2),ArenaLocY(2),ArenaLocX(DLN),ArenaLocY(DLN));
         RealAngle=XY2ang(ArenaLocX(DLN)-ArenaLocX(2),ArenaLocY(DLN)-ArenaLocY(2))/(2*3.141592653)*360;
-        %RealAngle=XY2ang(ArenaLocX(end)-ArenaLocX(2),ArenaLocY(end)-ArenaLocY(2))/(2*3.141592653)*360;
         AngleError=Angle-RealAngle;
         if AngleError>180
             AngleError=AngleError-360;
@@ -351,27 +336,3 @@ out{2+SearchNum+9,8}=TotNumErr(3,2)/NumTr(3,2);
 out{2+SearchNum+9,9}=SumPathDev(3,2)/NumTr(3,2);
 out{2+SearchNum+9,10}=SumAbsAngErr(3,2)/NumTr(3,2);
 
-
-
-
-% 
-% 
-% for TrialType=1:12
-%     NumTrainedPairsTests=0; NumAimFound=0; ErrTrainedPairsTests=0; PathDevTrainedPairsTests=0; AngleErrTrainedPairsTests=0;
-% 
-%     for i=1:SearchNum
-%         if out{2+i,17}==TrialType;  
-%             NumTrainedPairsTests=NumTrainedPairsTests+1;
-%             NumAimFound=NumAimFound+out{2+i,4};
-%             ErrTrainedPairsTests=ErrTrainedPairsTests+out{2+i,8};
-%             PathDevTrainedPairsTests=PathDevTrainedPairsTests+out{2+i,7};
-%             AngleErrTrainedPairsTests=AngleErrTrainedPairsTests+abs(out{2+i,16});
-%         end
-%     end
-% 
-%     out{2+SearchNum+3+TrialType,5}=NumTrainedPairsTests;
-%     out{2+SearchNum+3+TrialType,6}=NumAimFound/NumTrainedPairsTests;
-%     out{2+SearchNum+3+TrialType,7}=ErrTrainedPairsTests/NumTrainedPairsTests;
-%     out{2+SearchNum+3+TrialType,8}=PathDevTrainedPairsTests/NumTrainedPairsTests;
-%     out{2+SearchNum+3+TrialType,9}=AngleErrTrainedPairsTests/NumTrainedPairsTests;
-% end
