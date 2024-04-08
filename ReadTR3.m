@@ -1,5 +1,6 @@
 function out=ReadTR3(FileNameIn)
 
+%analysis of training and test trials
 %compute proportion of real path length to optimal one
 %categorize tasks according to the demands/difficulty level
 
@@ -12,6 +13,13 @@ NumAimFound(3,2)=zeros;
 TotNumErr(3,2)=zeros;
 SumPathDev(3,2)=zeros;
 SumAbsAngErr(3,2)=zeros;
+stav=0; %1-ukazovani, 2-hledani Added March 11, 2024
+
+%8.4.2024 FileNameIn ma obsahovat kompletni cestu, prehozeno pred out= 8.4.2024
+FileName = FileNameIn;
+FileNameIn = basename(FileName);
+%FileName=['d:\prace\mff\data\aappSeg\NUDZ\results\spanav\' FileNameIn '.tr'];
+%FileName=['D:\Users\kelemen\Data\VRKamil\' FileNameIn '.tr'];
 
 out{1,1}=FileNameIn;
 out{2,1}='trial';
@@ -32,9 +40,8 @@ out{2,15}='trial type';
 out{2,16}='angle indicated';
 out{2,17}='angle real';
 out{2,18}='angle error';
+out{2,19}='path efficiency';
 
-FileName=['d:\prace\mff\data\aappSeg\NUDZ\results\spanav\' FileNameIn '.tr'];
-%FileName=['D:\Users\kelemen\Data\VRKamil\' FileNameIn '.tr'];
 
 
 FileID=fopen(FileName);
@@ -232,7 +239,7 @@ while feof(FileID)==0
         end
         %title(['Search# ' num2str(SearchNum) '   ' CurrentAim '-' Cil '   duration: ' num2str(Duration) '   length: ' num2str(Length) '   Errors: ' num2str(NumErr)])
         if SearchNum==1
-            title([FileNameIn ' ' num2str(SearchNum)])
+            title([FileNameIn ' ' num2str(SearchNum)],'Interpreter', 'none')
         else
             title([num2str(SearchNum)])
         end
@@ -254,6 +261,7 @@ while feof(FileID)==0
         out{2+SearchNum,16}=Angle;
         out{2+SearchNum,17}=RealAngle;
         out{2+SearchNum,18}=AngleError;
+        out{2+SearchNum,19}=1/ToOptimalLength; %kamil 8.4.2024
         
         NumTr(TrialTypeKE,Cues)=NumTr(TrialTypeKE,Cues)+1;
         NumAimFound(TrialTypeKE,Cues)=NumAimFound(TrialTypeKE,Cues)+AimFound;
