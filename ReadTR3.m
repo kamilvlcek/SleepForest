@@ -1,5 +1,5 @@
-function out=ReadTR3(FileNameIn)
-
+function out=ReadTR3(FileNameIn,TrajectoriesToShow)
+if exist('TrajectoriesToShow','var')~=1, TrajectoriesToShow=[]; end
 %analysis of training and test trials
 %compute proportion of real path length to optimal one
 %categorize tasks according to the demands/difficulty level
@@ -11,7 +11,7 @@ PlotsInFigure=15;
 NumTr(3,2)=zeros;
 NumAimFound(3,2)=zeros;
 TotNumErr(3,2)=zeros;
-SumPathDev(3,2)=zeros;
+SumPathDev(3,2)=zeros; %kamil 8.4.2024 'path efficiency';
 SumAbsAngErr(3,2)=zeros;
 stav=0; %1-ukazovani, 2-hledani Added March 11, 2024
 
@@ -41,8 +41,6 @@ out{2,16}='angle indicated';
 out{2,17}='angle real';
 out{2,18}='angle error';
 out{2,19}='path efficiency';
-
-
 
 FileID=fopen(FileName);
 
@@ -197,6 +195,7 @@ while feof(FileID)==0
         plot([AimX(8)+500 AimX(9)-500],[0-AimY(8) 0-AimY(9)],'k')
         hold on
         plot(ArenaLocX(2:end),0-ArenaLocY(2:end),'b')%%
+        Trajectories{SearchNum}=[ArenaLocX;ArenaLocY];
 
         StartEndField=DetStartEndField(ArenaLocX(2:end),ArenaLocY(2:end),AimX,AimY); %find start and end field
 
@@ -208,6 +207,7 @@ while feof(FileID)==0
 
         hold on
         plot(AimX(CurBox),0-AimY(CurBox), '.g') %%%
+        EndBoxes{SearchNum}=[AimX(CurBox),AimY(CurBox)];
         for i=1:NumErr
              hold on
              plot(ErrLocX(i), 0-ErrLocY(i),'.r')
@@ -221,6 +221,7 @@ while feof(FileID)==0
         plot(ArenaLocX(2),0-ArenaLocY(2), '.b')
         hold on
         plot(ArenaLocX(2)+IndicatedAng(1),0-(ArenaLocY(2)+IndicatedAng(2)), '.r');
+        IndicatedAngles{SearchNum}=IndicatedAng;
         axis equal
         axis ij
         set ( gca, 'xdir', 'reverse' )
@@ -251,7 +252,7 @@ while feof(FileID)==0
         out{2+SearchNum,6}=AimFound;
         out{2+SearchNum,7}=Duration;
         out{2+SearchNum,8}=Length;
-        out{2+SearchNum,9}=ToOptimalLength;
+        out{2+SearchNum,9}=ToOptimalLength; %'path deviaton from optimal';
         out{2+SearchNum,10}=NumErr;
         out{2+SearchNum,11}=StartEndField(1);
         out{2+SearchNum,12}=CurBox;
@@ -261,12 +262,12 @@ while feof(FileID)==0
         out{2+SearchNum,16}=Angle;
         out{2+SearchNum,17}=RealAngle;
         out{2+SearchNum,18}=AngleError;
-        out{2+SearchNum,19}=1/ToOptimalLength; %kamil 8.4.2024
+        out{2+SearchNum,19}=1/ToOptimalLength; %kamil 8.4.2024 'path efficiency';
         
         NumTr(TrialTypeKE,Cues)=NumTr(TrialTypeKE,Cues)+1;
         NumAimFound(TrialTypeKE,Cues)=NumAimFound(TrialTypeKE,Cues)+AimFound;
         TotNumErr(TrialTypeKE,Cues)=TotNumErr(TrialTypeKE,Cues)+NumErr;
-        SumPathDev(TrialTypeKE,Cues)=SumPathDev(TrialTypeKE,Cues)+ToOptimalLength;
+        SumPathDev(TrialTypeKE,Cues)=SumPathDev(TrialTypeKE,Cues)+1/ToOptimalLength;  %kamil 8.4.2024 'path efficiency';
         SumAbsAngErr(TrialTypeKE,Cues)=SumAbsAngErr(TrialTypeKE,Cues)+abs(AngleError);
     end
 end
@@ -280,7 +281,7 @@ out{2+SearchNum+3,5}='N of turns in sequence';
 out{2+SearchNum+3,6}='N'; %
 out{2+SearchNum+3,7}='prop. aim found';%
 out{2+SearchNum+3,8}='mean N errors';% 'Angle Error';
-out{2+SearchNum+3,9}='mean path deviation';
+out{2+SearchNum+3,9}='mean path efficiency'; %kamil 19.4.2024
 out{2+SearchNum+3,10}='mean Absolute angle error';
 
 
@@ -344,3 +345,27 @@ out{2+SearchNum+9,8}=TotNumErr(3,2)/NumTr(3,2);
 out{2+SearchNum+9,9}=SumPathDev(3,2)/NumTr(3,2);
 out{2+SearchNum+9,10}=SumAbsAngErr(3,2)/NumTr(3,2);
 
+
+% TrajectoriesToShow=[1 2 3 6];
+if ~isempty(TrajectoriesToShow), figure; end
+for i=1:SearchNum
+    TrFound=0;
+    for j=1:length(TrajectoriesToShow)
+        if i==TrajectoriesToShow(j)
+            TrFound=1;
+        end
+    end    
+    if TrFound==1        
+        plot(Trajectories{i}(1,2:end),0-Trajectories{i}(2,2:end),'b')
+        hold on
+        plot(EndBoxes{i}(1),0-EndBoxes{i}(2),'.g')
+        hold on
+        plot([Trajectories{i}(1,2) Trajectories{i}(1,2)+IndicatedAngles{i}(1)],[0-Trajectories{i}(2,2) 0-(Trajectories{i}(2,2)+IndicatedAngles{i}(2))],'r', 'LineWidth',2)
+        hold on
+        plot([-1700 3700 3700 -1700 -1700],0-[-1700 -1700 3700 3700 -1700], 'k')
+        axis equal
+        axis ij
+        set ( gca, 'xdir', 'reverse' )
+        axis off
+    end
+end
