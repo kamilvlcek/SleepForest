@@ -61,6 +61,7 @@ end
 DLN=0;
 firstdataline=0;
 NumErr=0;
+LastMeasuresForAim = zeros(9,3); %columns: 'duration', 'path efficiency' 'angle error', rows: CurBox 1-9 (tj aims), kamil 7.6.2024
 
 while feof(FileID)==0
     line=fgetl(FileID);
@@ -130,7 +131,7 @@ while feof(FileID)==0
       ErrLocX(NumErr)=ArenaLocX(DLN);
       ErrLocY(NumErr)=ArenaLocY(DLN);
     end
-
+        
     if (length(strfind(line, 'VYBORNE !'))>0 || length(strfind(line, 'NEPOVEDLO SE VAM NAJIT CIL'))>0) && SearchAnimal==1 % modified March 6 2024
         SearchAnimal=0; % added March 6 2024
         SearchNum=SearchNum+1;
@@ -256,7 +257,7 @@ while feof(FileID)==0
         out{2+SearchNum,9}=ToOptimalLength; %'path deviaton from optimal';
         out{2+SearchNum,10}=NumErr;
         out{2+SearchNum,11}=StartEndField(1);
-        out{2+SearchNum,12}=CurBox;
+        out{2+SearchNum,12}=CurBox; %'GoalField'
         out{2+SearchNum,13}=TrialType(2);
         out{2+SearchNum,14}=TrialType(3);
         out{2+SearchNum,15}=TrialTypeKE;
@@ -271,6 +272,8 @@ while feof(FileID)==0
         SumPathDev(TrialTypeKE,Cues)=SumPathDev(TrialTypeKE,Cues)+ToOptimalLength;  
         SumAbsAngErr(TrialTypeKE,Cues)=SumAbsAngErr(TrialTypeKE,Cues)+abs(AngleError);
         SumOptToRealPath(TrialTypeKE,Cues)=SumOptToRealPath(TrialTypeKE,Cues)+(1/ToOptimalLength); % 'path efficiency';
+        
+        LastMeasuresForAim(CurBox,:) = [Duration, 1/ToOptimalLength,abs(AngleError )]; %columns: 'duration', 'path efficiency' 'angle error',
     end
 end
 
@@ -352,6 +355,15 @@ out{2+SearchNum+9,8}=TotNumErr(3,2)/NumTr(3,2);
 out{2+SearchNum+9,9}=SumPathDev(3,2)/NumTr(3,2);
 out{2+SearchNum+9,10}=SumAbsAngErr(3,2)/NumTr(3,2);
 out{2+SearchNum+9,11}=SumOptToRealPath(3,2)/NumTr(3,2);
+
+%LastMeasuresForAim kamil 7.6.2024 - hodnoty z posledniho hledani cile 1-9
+row = 2+SearchNum+11;
+[out{row, 2:5}] = deal('GoalField', 'duration', 'path efficiency', 'angle error');
+for j=1:9
+	[out{row+j,2:5}]=deal(j,LastMeasuresForAim(j,1), LastMeasuresForAim(j,2), LastMeasuresForAim(j,3));
+end
+
+xlswrite([FileNameIn '.xls'], out); %#ok<XLSWT>
 
 % TrajectoriesToShow=[1 2 3 6];
 if ~isempty(TrajectoriesToShow), figure; end
