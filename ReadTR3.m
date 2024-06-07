@@ -11,8 +11,9 @@ PlotsInFigure=15;
 NumTr(3,2)=zeros;
 NumAimFound(3,2)=zeros;
 TotNumErr(3,2)=zeros;
-SumPathDev(3,2)=zeros; %kamil 8.4.2024 'path efficiency';
+SumPathDev(3,2)=zeros; % 'path deviation';
 SumAbsAngErr(3,2)=zeros;
+SumOptToRealPath(3,2)=zeros;  % 'path efficiency';
 stav=0; %1-ukazovani, 2-hledani Added March 11, 2024
 
 %8.4.2024 FileNameIn ma obsahovat kompletni cestu, prehozeno pred out= 8.4.2024
@@ -267,8 +268,9 @@ while feof(FileID)==0
         NumTr(TrialTypeKE,Cues)=NumTr(TrialTypeKE,Cues)+1;
         NumAimFound(TrialTypeKE,Cues)=NumAimFound(TrialTypeKE,Cues)+AimFound;
         TotNumErr(TrialTypeKE,Cues)=TotNumErr(TrialTypeKE,Cues)+NumErr;
-        SumPathDev(TrialTypeKE,Cues)=SumPathDev(TrialTypeKE,Cues)+1/ToOptimalLength;  %kamil 8.4.2024 'path efficiency';
+        SumPathDev(TrialTypeKE,Cues)=SumPathDev(TrialTypeKE,Cues)+ToOptimalLength;  
         SumAbsAngErr(TrialTypeKE,Cues)=SumAbsAngErr(TrialTypeKE,Cues)+abs(AngleError);
+        SumOptToRealPath(TrialTypeKE,Cues)=SumOptToRealPath(TrialTypeKE,Cues)+(1/ToOptimalLength); % 'path efficiency';
     end
 end
 
@@ -281,9 +283,9 @@ out{2+SearchNum+3,5}='N of turns in sequence';
 out{2+SearchNum+3,6}='N'; %
 out{2+SearchNum+3,7}='prop. aim found';%
 out{2+SearchNum+3,8}='mean N errors';% 'Angle Error';
-out{2+SearchNum+3,9}='mean path efficiency'; %kamil 19.4.2024
+out{2+SearchNum+3,9}='mean path deviation';
 out{2+SearchNum+3,10}='mean Absolute angle error';
-
+out{2+SearchNum+3,11}='mean optimal to real path';
 
 out{2+SearchNum+4,2}='north only';
 out{2+SearchNum+4,3}='1';
@@ -294,6 +296,7 @@ out{2+SearchNum+4,7}=NumAimFound(1,1)/NumTr(1,1);
 out{2+SearchNum+4,8}=TotNumErr(1,1)/NumTr(1,1);
 out{2+SearchNum+4,9}=SumPathDev(1,1)/NumTr(1,1);
 out{2+SearchNum+4,10}=SumAbsAngErr(1,1)/NumTr(1,1);
+out{2+SearchNum+4,11}=SumOptToRealPath(1,1)/NumTr(1,1);
 
 out{2+SearchNum+5,2}='north only';
 out{2+SearchNum+5,3}='2';
@@ -304,6 +307,7 @@ out{2+SearchNum+5,7}=NumAimFound(2,1)/NumTr(2,1);
 out{2+SearchNum+5,8}=TotNumErr(2,1)/NumTr(2,1);
 out{2+SearchNum+5,9}=SumPathDev(2,1)/NumTr(2,1);
 out{2+SearchNum+5,10}=SumAbsAngErr(2,1)/NumTr(2,1);
+out{2+SearchNum+5,11}=SumOptToRealPath(2,1)/NumTr(2,1);
 
 out{2+SearchNum+6,2}='north only';
 out{2+SearchNum+6,3}='3';
@@ -314,6 +318,7 @@ out{2+SearchNum+6,7}=NumAimFound(3,1)/NumTr(3,1);
 out{2+SearchNum+6,8}=TotNumErr(3,1)/NumTr(3,1);
 out{2+SearchNum+6,9}=SumPathDev(3,1)/NumTr(3,1);
 out{2+SearchNum+6,10}=SumAbsAngErr(3,1)/NumTr(3,1);
+out{2+SearchNum+6,11}=SumOptToRealPath(3,1)/NumTr(3,1);
 
 out{2+SearchNum+7,2}='statues only';
 out{2+SearchNum+7,3}='1';
@@ -324,6 +329,7 @@ out{2+SearchNum+7,7}=NumAimFound(1,2)/NumTr(1,2);
 out{2+SearchNum+7,8}=TotNumErr(1,2)/NumTr(1,2);
 out{2+SearchNum+7,9}=SumPathDev(1,2)/NumTr(1,2);
 out{2+SearchNum+7,10}=SumAbsAngErr(1,2)/NumTr(1,2);
+out{2+SearchNum+7,11}=SumOptToRealPath(1,2)/NumTr(1,2);
 
 out{2+SearchNum+8,2}='statues only';
 out{2+SearchNum+8,3}='2';
@@ -334,6 +340,7 @@ out{2+SearchNum+8,7}=NumAimFound(2,2)/NumTr(2,2);
 out{2+SearchNum+8,8}=TotNumErr(2,2)/NumTr(2,2);
 out{2+SearchNum+8,9}=SumPathDev(2,2)/NumTr(2,2);
 out{2+SearchNum+8,10}=SumAbsAngErr(2,2)/NumTr(2,2);
+out{2+SearchNum+8,11}=SumOptToRealPath(2,2)/NumTr(2,2);
 
 out{2+SearchNum+9,2}='statues only';
 out{2+SearchNum+9,3}='3';
@@ -344,7 +351,7 @@ out{2+SearchNum+9,7}=NumAimFound(3,2)/NumTr(3,2);
 out{2+SearchNum+9,8}=TotNumErr(3,2)/NumTr(3,2);
 out{2+SearchNum+9,9}=SumPathDev(3,2)/NumTr(3,2);
 out{2+SearchNum+9,10}=SumAbsAngErr(3,2)/NumTr(3,2);
-
+out{2+SearchNum+9,11}=SumOptToRealPath(3,2)/NumTr(3,2);
 
 % TrajectoriesToShow=[1 2 3 6];
 if ~isempty(TrajectoriesToShow), figure; end
