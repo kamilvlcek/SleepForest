@@ -8,17 +8,17 @@ if exist('TrajectoriesToShow','var')~=1, TrajectoriesToShow=[]; end
 
 SearchAnimal=0; % added March 6 2024
 PlotsInFigure=15;
-NumTr(3,2)=zeros;
-NumAimFound(3,2)=zeros;
-TotNumErr(3,2)=zeros;
-SumPathDev(3,2)=zeros; % 'path deviation';
-SumAbsAngErr(3,2)=zeros;
-SumOptToRealPath(3,2)=zeros;  % 'path efficiency';
+NumTr(3,3)=zeros;NumTrB(3,3)=zeros; NumTrE(3,3)=zeros;
+NumAimFound(3,3)=zeros; NumAimFoundB(3,3)=zeros; NumAimFoundE(3,3)=zeros;
+TotNumErr(3,3)=zeros; TotNumErrB(3,3)=zeros; TotNumErrE(3,3)=zeros;
+SumPathDev(3,3)=zeros; SumPathDevB(3,3)=zeros; SumPathDevE(3,3)=zeros; % 'path deviation';
+SumAbsAngErr(3,3)=zeros; SumAbsAngErrB(3,3)=zeros; SumAbsAngErrE(3,3)=zeros;
+SumOptToRealPath(3,3)=zeros; SumOptToRealPathB(3,3)=zeros; SumOptToRealPathE(3,3)=zeros; % 'path efficiency';
 stav=0; %1-ukazovani, 2-hledani Added March 11, 2024
 
-%8.4.2024 FileNameIn ma obsahovat kompletni cestu, prehozeno pred out= 8.4.2024
-FileName = FileNameIn;
-FileNameIn = basename(FileName);
+%8.4.2024 chci aby vstupni parametr FileName obsahoval kompletni cestu, prehozeno pred out= 8.4.2024
+FileName = FileNameIn; % complete trajectory
+FileNameIn = basename(FileName); % only filename
 %FileName=['d:\prace\mff\data\aappSeg\NUDZ\results\spanav\' FileNameIn '.tr'];
 %FileName=['D:\Users\kelemen\Data\VRKamil\' FileNameIn '.tr'];
 
@@ -95,6 +95,9 @@ while feof(FileID)==0
         if NorthArrow==0 && Statues==1
             Cues=2;
         end
+        if NorthArrow==1 && Statues==1  %% 27 Dec 2024
+            Cues=3;                     %% 27 Dec 2024
+        end                             %% 27 Dec 2024
     end
     if strfind(line, 'Aim search:')
         n=strfind(line, 'Aim search:');
@@ -173,7 +176,7 @@ while feof(FileID)==0
 
         %figure 
         if rem(SearchNum,PlotsInFigure)==1
-            figure('position', [50, 50, 900, 700])
+            figure('Name','All trials','position', [50, 50, 900, 700])
         end
         PlotPosition=SearchNum;
         while PlotPosition>PlotsInFigure 
@@ -274,11 +277,30 @@ while feof(FileID)==0
         SumOptToRealPath(TrialTypeKE,Cues)=SumOptToRealPath(TrialTypeKE,Cues)+(1/ToOptimalLength); % 'path efficiency';
         
         LastMeasuresForAim(CurBox,:) = [Duration, 1/ToOptimalLength,abs(AngleError )]; %columns: 'duration', 'path efficiency' 'angle error',
-    end
+        if SearchNum<13
+            NumTrB(TrialTypeKE,Cues)=NumTrB(TrialTypeKE,Cues)+1;
+            NumAimFoundB(TrialTypeKE,Cues)=NumAimFoundB(TrialTypeKE,Cues)+AimFound;
+            TotNumErrB(TrialTypeKE,Cues)=TotNumErrB(TrialTypeKE,Cues)+NumErr;
+            SumPathDevB(TrialTypeKE,Cues)=SumPathDevB(TrialTypeKE,Cues)+ToOptimalLength;
+            SumAbsAngErrB(TrialTypeKE,Cues)=SumAbsAngErrB(TrialTypeKE,Cues)+abs(AngleError);
+            SumOptToRealPathB(TrialTypeKE,Cues)=SumOptToRealPathB(TrialTypeKE,Cues)+(1/ToOptimalLength);
+        end
+
+        if SearchNum>18 && SearchNum<31
+            NumTrE(TrialTypeKE,Cues)=NumTrE(TrialTypeKE,Cues)+1;
+            NumAimFoundE(TrialTypeKE,Cues)=NumAimFoundE(TrialTypeKE,Cues)+AimFound;
+            TotNumErrE(TrialTypeKE,Cues)=TotNumErrE(TrialTypeKE,Cues)+NumErr;
+            SumPathDevE(TrialTypeKE,Cues)=SumPathDevE(TrialTypeKE,Cues)+ToOptimalLength;
+            SumAbsAngErrE(TrialTypeKE,Cues)=SumAbsAngErrE(TrialTypeKE,Cues)+abs(AngleError);
+            SumOptToRealPathE(TrialTypeKE,Cues)=SumOptToRealPathE(TrialTypeKE,Cues)+(1/ToOptimalLength);
+        end
+    end  
 end
 
 %summary analysis
 
+%analysis of all trials
+out{2+SearchNum+3,1}='Analysis of all trials';
 out{2+SearchNum+3,2}='landmarks';
 out{2+SearchNum+3,3}='trial type';
 out{2+SearchNum+3,4}='N of trained pairs in sequence'; 
@@ -356,9 +378,273 @@ out{2+SearchNum+9,9}=SumPathDev(3,2)/NumTr(3,2);
 out{2+SearchNum+9,10}=SumAbsAngErr(3,2)/NumTr(3,2);
 out{2+SearchNum+9,11}=SumOptToRealPath(3,2)/NumTr(3,2);
 
+%***beg %% 27 Dec 2024
+out{2+SearchNum+10,2}='north and statues';
+out{2+SearchNum+10,3}='1';
+out{2+SearchNum+10,4}='1'; 
+out{2+SearchNum+10,5}='0';
+out{2+SearchNum+10,6}=NumTr(1,3);
+out{2+SearchNum+10,7}=NumAimFound(1,3)/NumTr(1,3);
+out{2+SearchNum+10,8}=TotNumErr(1,3)/NumTr(1,3);
+out{2+SearchNum+10,9}=SumPathDev(1,3)/NumTr(1,3);
+out{2+SearchNum+10,10}=SumAbsAngErr(1,3)/NumTr(1,3);
+out{2+SearchNum+10,11}=SumOptToRealPath(1,3)/NumTr(1,3);
+
+out{2+SearchNum+11,2}='north and statues';
+out{2+SearchNum+11,3}='2';
+out{2+SearchNum+11,4}='2'; 
+out{2+SearchNum+11,5}='0';
+out{2+SearchNum+11,6}=NumTr(2,3);
+out{2+SearchNum+11,7}=NumAimFound(2,3)/NumTr(2,3);
+out{2+SearchNum+11,8}=TotNumErr(2,3)/NumTr(2,3);
+out{2+SearchNum+11,9}=SumPathDev(2,3)/NumTr(2,3);
+out{2+SearchNum+11,10}=SumAbsAngErr(2,3)/NumTr(2,3);
+out{2+SearchNum+11,11}=SumOptToRealPath(2,3)/NumTr(2,3);
+
+out{2+SearchNum+12,2}='north and statues';
+out{2+SearchNum+12,3}='3';
+out{2+SearchNum+12,4}='>1'; 
+out{2+SearchNum+12,5}='>0';
+out{2+SearchNum+12,6}=NumTr(3,3);
+out{2+SearchNum+12,7}=NumAimFound(3,3)/NumTr(3,3);
+out{2+SearchNum+12,8}=TotNumErr(3,3)/NumTr(3,3);
+out{2+SearchNum+12,9}=SumPathDev(3,3)/NumTr(3,3);
+out{2+SearchNum+12,10}=SumAbsAngErr(3,3)/NumTr(3,3);
+out{2+SearchNum+12,11}=SumOptToRealPath(3,3)/NumTr(3,3);
+%***end %% 27 Dec 2024
+
+%analysis of the first 12 trials
+out{2+SearchNum+14,1}='Analysis of trials 1-12';
+out{2+SearchNum+14,2}='landmarks';
+out{2+SearchNum+14,3}='trial type';
+out{2+SearchNum+14,4}='N of trained pairs in sequence'; 
+out{2+SearchNum+14,5}='N of turns in sequence';
+out{2+SearchNum+14,6}='N'; %
+out{2+SearchNum+14,7}='prop. aim found';%
+out{2+SearchNum+14,8}='mean N errors';%
+out{2+SearchNum+14,9}='mean path deviation';
+out{2+SearchNum+14,10}='mean Absolute angle error';
+out{2+SearchNum+14,11}='mean optimal to real path';
+
+out{2+SearchNum+15,2}='north only';
+out{2+SearchNum+15,3}='1';
+out{2+SearchNum+15,4}='1'; 
+out{2+SearchNum+15,5}='0';
+out{2+SearchNum+15,6}=NumTrB(1,1);
+out{2+SearchNum+15,7}=NumAimFoundB(1,1)/NumTrB(1,1);
+out{2+SearchNum+15,8}=TotNumErrB(1,1)/NumTrB(1,1);
+out{2+SearchNum+15,9}=SumPathDevB(1,1)/NumTrB(1,1);
+out{2+SearchNum+15,10}=SumAbsAngErrB(1,1)/NumTrB(1,1);
+out{2+SearchNum+15,11}=SumOptToRealPathB(1,1)/NumTrB(1,1);
+
+out{2+SearchNum+16,2}='north only';
+out{2+SearchNum+16,3}='2';
+out{2+SearchNum+16,4}='2'; 
+out{2+SearchNum+16,5}='0';
+out{2+SearchNum+16,6}=NumTrB(2,1);
+out{2+SearchNum+16,7}=NumAimFoundB(2,1)/NumTrB(2,1);
+out{2+SearchNum+16,8}=TotNumErrB(2,1)/NumTrB(2,1);
+out{2+SearchNum+16,9}=SumPathDevB(2,1)/NumTrB(2,1);
+out{2+SearchNum+16,10}=SumAbsAngErrB(2,1)/NumTrB(2,1);
+out{2+SearchNum+16,11}=SumOptToRealPathB(2,1)/NumTrB(2,1);
+
+out{2+SearchNum+17,2}='north only';
+out{2+SearchNum+17,3}='3';
+out{2+SearchNum+17,4}='>1'; 
+out{2+SearchNum+17,5}='>0';
+out{2+SearchNum+17,6}=NumTrB(3,1);
+out{2+SearchNum+17,7}=NumAimFoundB(3,1)/NumTrB(3,1);
+out{2+SearchNum+17,8}=TotNumErrB(3,1)/NumTrB(3,1);
+out{2+SearchNum+17,9}=SumPathDevB(3,1)/NumTrB(3,1);
+out{2+SearchNum+17,10}=SumAbsAngErrB(3,1)/NumTrB(3,1);
+out{2+SearchNum+17,11}=SumOptToRealPathB(3,1)/NumTrB(3,1);
+
+out{2+SearchNum+18,2}='statues only';
+out{2+SearchNum+18,3}='1';
+out{2+SearchNum+18,4}='1'; 
+out{2+SearchNum+18,5}='0';
+out{2+SearchNum+18,6}=NumTrB(1,2);
+out{2+SearchNum+18,7}=NumAimFoundB(1,2)/NumTrB(1,2);
+out{2+SearchNum+18,8}=TotNumErrB(1,2)/NumTrB(1,2);
+out{2+SearchNum+18,9}=SumPathDevB(1,2)/NumTrB(1,2);
+out{2+SearchNum+18,10}=SumAbsAngErrB(1,2)/NumTrB(1,2);
+out{2+SearchNum+18,11}=SumOptToRealPathB(1,2)/NumTrB(1,2);
+
+out{2+SearchNum+19,2}='statues only';
+out{2+SearchNum+19,3}='2';
+out{2+SearchNum+19,4}='2'; 
+out{2+SearchNum+19,5}='0';
+out{2+SearchNum+19,6}=NumTrB(2,2);
+out{2+SearchNum+19,7}=NumAimFoundB(2,2)/NumTrB(2,2);
+out{2+SearchNum+19,8}=TotNumErrB(2,2)/NumTrB(2,2);
+out{2+SearchNum+19,9}=SumPathDevB(2,2)/NumTrB(2,2);
+out{2+SearchNum+19,10}=SumAbsAngErrB(2,2)/NumTrB(2,2);
+out{2+SearchNum+19,11}=SumOptToRealPathB(2,2)/NumTrB(2,2);
+
+out{2+SearchNum+20,2}='statues only';
+out{2+SearchNum+20,3}='3';
+out{2+SearchNum+20,4}='>1'; 
+out{2+SearchNum+20,5}='>0';
+out{2+SearchNum+20,6}=NumTrB(3,2);
+out{2+SearchNum+20,7}=NumAimFoundB(3,2)/NumTrB(3,2);
+out{2+SearchNum+20,8}=TotNumErrB(3,2)/NumTrB(3,2);
+out{2+SearchNum+20,9}=SumPathDevB(3,2)/NumTrB(3,2);
+out{2+SearchNum+20,10}=SumAbsAngErrB(3,2)/NumTrB(3,2);
+out{2+SearchNum+20,11}=SumOptToRealPathB(3,2)/NumTrB(3,2);
+
+%*** beg 27 Dec 2024
+out{2+SearchNum+21,2}='north and statues';
+out{2+SearchNum+21,3}='1';
+out{2+SearchNum+21,4}='1'; 
+out{2+SearchNum+21,5}='0';
+out{2+SearchNum+21,6}=NumTrB(1,3);
+out{2+SearchNum+21,7}=NumAimFoundB(1,3)/NumTrB(1,3);
+out{2+SearchNum+21,8}=TotNumErrB(1,3)/NumTrB(1,3);
+out{2+SearchNum+21,9}=SumPathDevB(1,3)/NumTrB(1,3);
+out{2+SearchNum+21,10}=SumAbsAngErrB(1,3)/NumTrB(1,3);
+out{2+SearchNum+21,11}=SumOptToRealPathB(1,3)/NumTrB(1,3);
+
+out{2+SearchNum+22,2}='north and statues';
+out{2+SearchNum+22,3}='2';
+out{2+SearchNum+22,4}='2'; 
+out{2+SearchNum+22,5}='0';
+out{2+SearchNum+22,6}=NumTrB(2,3);
+out{2+SearchNum+22,7}=NumAimFoundB(2,3)/NumTrB(2,3);
+out{2+SearchNum+22,8}=TotNumErrB(2,3)/NumTrB(2,3);
+out{2+SearchNum+22,9}=SumPathDevB(2,3)/NumTrB(2,3);
+out{2+SearchNum+22,10}=SumAbsAngErrB(2,3)/NumTrB(2,3);
+out{2+SearchNum+22,11}=SumOptToRealPathB(2,3)/NumTrB(2,3);
+
+out{2+SearchNum+23,2}='north and statues';
+out{2+SearchNum+23,3}='3';
+out{2+SearchNum+23,4}='>1'; 
+out{2+SearchNum+23,5}='>0';
+out{2+SearchNum+23,6}=NumTrB(3,3);
+out{2+SearchNum+23,7}=NumAimFoundB(3,3)/NumTrB(3,3);
+out{2+SearchNum+23,8}=TotNumErrB(3,3)/NumTrB(3,3);
+out{2+SearchNum+23,9}=SumPathDevB(3,3)/NumTrB(3,3);
+out{2+SearchNum+23,10}=SumAbsAngErrB(3,3)/NumTrB(3,3);
+out{2+SearchNum+23,11}=SumOptToRealPathB(3,3)/NumTrB(3,3);
+%*** end 27 Dec 2024
+
+%analysis of the last 12 trials
+out{2+SearchNum+25,1}='Analysis of trials 19-30';
+out{2+SearchNum+25,2}='landmarks';
+out{2+SearchNum+25,3}='trial type';
+out{2+SearchNum+25,4}='N of trained pairs in sequence'; 
+out{2+SearchNum+25,5}='N of turns in sequence';
+out{2+SearchNum+25,6}='N'; %
+out{2+SearchNum+25,7}='prop. aim found';%
+out{2+SearchNum+25,8}='mean N errors';%
+out{2+SearchNum+25,9}='mean path deviation';
+out{2+SearchNum+25,10}='mean Absolute angle error';
+out{2+SearchNum+25,11}='mean optimal to real path';
+
+out{2+SearchNum+26,2}='north only';
+out{2+SearchNum+26,3}='1';
+out{2+SearchNum+26,4}='1'; 
+out{2+SearchNum+26,5}='0';
+out{2+SearchNum+26,6}=NumTrE(1,1);
+out{2+SearchNum+26,7}=NumAimFoundE(1,1)/NumTrE(1,1);
+out{2+SearchNum+26,8}=TotNumErrE(1,1)/NumTrE(1,1);
+out{2+SearchNum+26,9}=SumPathDevE(1,1)/NumTrE(1,1);
+out{2+SearchNum+26,10}=SumAbsAngErrE(1,1)/NumTrE(1,1);
+out{2+SearchNum+26,11}=SumOptToRealPathE(1,1)/NumTrE(1,1);
+
+out{2+SearchNum+27,2}='north only';
+out{2+SearchNum+27,3}='2';
+out{2+SearchNum+27,4}='2'; 
+out{2+SearchNum+27,5}='0';
+out{2+SearchNum+27,6}=NumTrE(2,1);
+out{2+SearchNum+27,7}=NumAimFoundE(2,1)/NumTrE(2,1);
+out{2+SearchNum+27,8}=TotNumErrE(2,1)/NumTrE(2,1);
+out{2+SearchNum+27,9}=SumPathDevE(2,1)/NumTrE(2,1);
+out{2+SearchNum+27,10}=SumAbsAngErrE(2,1)/NumTrE(2,1);
+out{2+SearchNum+27,11}=SumOptToRealPathE(2,1)/NumTrE(2,1);
+
+out{2+SearchNum+28,2}='north only';
+out{2+SearchNum+28,3}='3';
+out{2+SearchNum+28,4}='>1'; 
+out{2+SearchNum+28,5}='>0';
+out{2+SearchNum+28,6}=NumTrE(3,1);
+out{2+SearchNum+28,7}=NumAimFoundE(3,1)/NumTrE(3,1);
+out{2+SearchNum+28,8}=TotNumErrE(3,1)/NumTrE(3,1);
+out{2+SearchNum+28,9}=SumPathDevE(3,1)/NumTrE(3,1);
+out{2+SearchNum+28,10}=SumAbsAngErrE(3,1)/NumTrE(3,1);
+out{2+SearchNum+28,11}=SumOptToRealPathE(3,1)/NumTrE(3,1);
+
+out{2+SearchNum+29,2}='statues only';
+out{2+SearchNum+29,3}='1';
+out{2+SearchNum+29,4}='1'; 
+out{2+SearchNum+29,5}='0';
+out{2+SearchNum+29,6}=NumTrE(1,2);
+out{2+SearchNum+29,7}=NumAimFoundE(1,2)/NumTrE(1,2);
+out{2+SearchNum+29,8}=TotNumErrE(1,2)/NumTrE(1,2);
+out{2+SearchNum+29,9}=SumPathDevE(1,2)/NumTrE(1,2);
+out{2+SearchNum+29,10}=SumAbsAngErrE(1,2)/NumTrE(1,2);
+out{2+SearchNum+29,11}=SumOptToRealPathE(1,2)/NumTrE(1,2);
+
+out{2+SearchNum+30,2}='statues only';
+out{2+SearchNum+30,3}='2';
+out{2+SearchNum+30,4}='2'; 
+out{2+SearchNum+30,5}='0';
+out{2+SearchNum+30,6}=NumTrE(2,2);
+out{2+SearchNum+30,7}=NumAimFoundE(2,2)/NumTrE(2,2);
+out{2+SearchNum+30,8}=TotNumErrE(2,2)/NumTrE(2,2);
+out{2+SearchNum+30,9}=SumPathDevE(2,2)/NumTrE(2,2);
+out{2+SearchNum+30,10}=SumAbsAngErrE(2,2)/NumTrE(2,2);
+out{2+SearchNum+30,11}=SumOptToRealPathE(2,2)/NumTrE(2,2);
+
+out{2+SearchNum+31,2}='statues only';
+out{2+SearchNum+31,3}='3';
+out{2+SearchNum+31,4}='>1'; 
+out{2+SearchNum+31,5}='>0';
+out{2+SearchNum+31,6}=NumTrE(3,2);
+out{2+SearchNum+31,7}=NumAimFoundE(3,2)/NumTrE(3,2);
+out{2+SearchNum+31,8}=TotNumErrE(3,2)/NumTrE(3,2);
+out{2+SearchNum+31,9}=SumPathDevE(3,2)/NumTrE(3,2);
+out{2+SearchNum+31,10}=SumAbsAngErrE(3,2)/NumTrE(3,2);
+out{2+SearchNum+31,11}=SumOptToRealPathE(3,2)/NumTrE(3,2);
+
+%*** beg 27 Dec 2024
+out{2+SearchNum+32,2}='north and statues';
+out{2+SearchNum+32,3}='1';
+out{2+SearchNum+32,4}='1'; 
+out{2+SearchNum+32,5}='0';
+out{2+SearchNum+32,6}=NumTrE(1,3);
+out{2+SearchNum+32,7}=NumAimFoundE(1,3)/NumTrE(1,3);
+out{2+SearchNum+32,8}=TotNumErrE(1,3)/NumTrE(1,3);
+out{2+SearchNum+32,9}=SumPathDevE(1,3)/NumTrE(1,3);
+out{2+SearchNum+32,10}=SumAbsAngErrE(1,3)/NumTrE(1,3);
+out{2+SearchNum+32,11}=SumOptToRealPathE(1,3)/NumTrE(1,3);
+
+out{2+SearchNum+33,2}='north and statues';
+out{2+SearchNum+33,3}='2';
+out{2+SearchNum+33,4}='2'; 
+out{2+SearchNum+33,5}='0';
+out{2+SearchNum+33,6}=NumTrE(2,3);
+out{2+SearchNum+33,7}=NumAimFoundE(2,3)/NumTrE(2,3);
+out{2+SearchNum+33,8}=TotNumErrE(2,3)/NumTrE(2,3);
+out{2+SearchNum+33,9}=SumPathDevE(2,3)/NumTrE(2,3);
+out{2+SearchNum+33,10}=SumAbsAngErrE(2,3)/NumTrE(2,3);
+out{2+SearchNum+33,11}=SumOptToRealPathE(2,3)/NumTrE(2,3);
+
+out{2+SearchNum+34,2}='north and statues';
+out{2+SearchNum+34,3}='3';
+out{2+SearchNum+34,4}='>1'; 
+out{2+SearchNum+34,5}='>0';
+out{2+SearchNum+34,6}=NumTrE(3,3);
+out{2+SearchNum+34,7}=NumAimFoundE(3,3)/NumTrE(3,3);
+out{2+SearchNum+34,8}=TotNumErrE(3,3)/NumTrE(3,3);
+out{2+SearchNum+34,9}=SumPathDevE(3,3)/NumTrE(3,3);
+out{2+SearchNum+34,10}=SumAbsAngErrE(3,3)/NumTrE(3,3);
+out{2+SearchNum+34,11}=SumOptToRealPathE(3,3)/NumTrE(3,3);
+%*** end 27 Dec 2024
+
 %LastMeasuresForAim kamil 7.6.2024 - hodnoty z posledniho hledani cile 1-9
-row = 2+SearchNum+11;
-[out{row, 2:5}] = deal('GoalField', 'duration', 'path efficiency', 'angle error');
+row = 2+SearchNum+36;
+
+[out{row, 1:5}] = deal('Last goal search for each field','GoalField', 'duration', 'path efficiency', 'angle error');
 for j=1:9
 	[out{row+j,2:5}]=deal(j,LastMeasuresForAim(j,1), LastMeasuresForAim(j,2), LastMeasuresForAim(j,3));
 end
@@ -366,7 +652,7 @@ end
 xlswrite([FileNameIn '.xls'], out); %#ok<XLSWT>
 
 % TrajectoriesToShow=[1 2 3 6];
-if ~isempty(TrajectoriesToShow), figure; end
+if ~isempty(TrajectoriesToShow), figure('Name','TrajectoriesToShow') ; end
 for i=1:SearchNum
     TrFound=0;
     for j=1:length(TrajectoriesToShow)
