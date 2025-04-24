@@ -1,11 +1,11 @@
 function out=ReadTR3(FileNameIn)
-%zpracovani dat z testu, vykresli graf a vrati vysledkovou tabulku
+%process the test data, plot the graph and return the result table
 %compute proportion of real path length to optimal one
 %categorize tasks according to the demands/difficulty level
 
 % to do: angles, summary data
 
-PlotsInFigure=15; %kolik muze byt subplotu v jednom obrazku
+PlotsInFigure=15; %how many subplots can be in one image
 if ~exist('SubPlots','var') 
     SubPlots = 1;   %defaultne se delaji subploty
 end
@@ -35,12 +35,14 @@ FullFileName=['d:\prace\mff\data\aappSeg\skriptyForest\output\' FileNameIn ];
 
 FileID=fopen(FullFileName);
 
-SearchNum=0;
-NL=0;line=[];
+SearchNum=0; %trial number
+NL=0;line=[]; %line number
 %while strcmp(line(1:6),' 0.000')==0
-%NACITAM POZICE STANU
-while isempty(strfind(line, 'Ukaz na')) %tim ukoncuju hledani stanu
+fprintf('        ');
+%READing THE POSITIONs OF THE TENTs
+while isempty(strfind(line, 'Ukazte na')) %tim ukoncuju hledani stanu
     line=fgetl(FileID);
+	fprintf('\b\b\b\b\b\b%5i', NL);
     NL=NL+1;
     if strfind(line, 'Aim position')
         Aim=GetAimPositions(line); 
@@ -55,7 +57,7 @@ while isempty(strfind(line, 'Ukaz na')) %tim ukoncuju hledani stanu
         StartLocY=str2num(line(bb+2:bc-1));
     end                                             %%%
 end
-n=strfind(line, 'text:Najdi');
+n=strfind(line, 'text:Najdete');
 Cil=line(n+11:end-2);
 DLN=0;
 firstdataline=0;
@@ -72,7 +74,7 @@ X(8)=mean(AimX(8,:));Y(8)=mean(AimY(8,:));
 X(9)=mean(AimX(9,:));Y(9)=mean(AimY(9,:));
 
 %figure
-FIGUREDATA = {}; %tam budu shromadovat data pro obrazky, abych je pak mohl vykreslit v ruznem poradi
+FIGUREDATA = {}; %there I will collect data for the images, so I can then draw them in manual order
 
 while feof(FileID)==0
     line=fgetl(FileID);
@@ -103,7 +105,7 @@ while feof(FileID)==0
         StartLocX=str2num(line(ba+1:bb-1));
         StartLocY=str2num(line(bb+2:bc-1));
     end                                             %%%
-    if strfind(line, 'text:Najdi')
+    if strfind(line, 'text:Najdete')
         time=[];
         ArenaLocX=[];
         ArenaLocY=[];
@@ -111,7 +113,7 @@ while feof(FileID)==0
         NumErr=0;
         ErrBox=[];
         ErrGoal=[];
-        n=strfind(line, 'text:Najdi');
+        n=strfind(line, 'text:Najdete);
         Cil=line(n+11:end-2); %jmeno mista napr KOLIBRIKA
     end 
     if strfind(line, 'Avoid entrance:') %vstup do chybneho stanu
@@ -144,7 +146,7 @@ while feof(FileID)==0
     %ukonceni hledani cile 
     if length(strfind(line, 'Aim entrance:'))>0 || length(strfind(line, 'Aim not found:'))>0
 
-        SearchNum=SearchNum+1; %cislo trialu
+        SearchNum=SearchNum+1; %trial number
         
         if strfind(line, 'Aim entrance:')
             n=strfind(line, 'Aim entrance:');
@@ -177,8 +179,9 @@ while feof(FileID)==0
         end      
         CurGoal=str2num(CurrentAim(5)); %cislo stanu ve ctverci s cilem
         
-        StartEndField=DetStartEndField(ArenaLocX(2:end),ArenaLocY(2:end),X,Y); %find start and end field - uz jenom start field
-        TrialType=DetTrialType([StartEndField(1) CurBox]);  %determine the type of test trial 
+        StartEndField=DetStartEndField(ArenaLocX(2:end),ArenaLocY(2:end),X,Y) %; %find start and end field - uz jenom start field
+		CurBox
+        TrialType=DetTrialType([StartEndField(1) CurBox]) %;  %determine the type of test trial 
         
         if exist('Angle','var')   %  Kamil 6.11.2018 -  Adam24_8_18_3_0.tr vubec neukazal                 
             IndicatedAng=DistAng2Pos(400,Angle/360*2*3.141592653);           
@@ -437,11 +440,12 @@ function Obrazky(FD,PlotsInFigure,FileName,SubPlots)
             
             StartPlot = false; %jestli se maji kresli spolecne veci - vse krome tracku
             if SubPlots == 1 && rem(n,PlotsInFigure)==1
-                figure('Name',[ FileName ' - TT ' num2str(Kategorie{kat}) ' - Plot ' num2str(ceil(n/PlotsInFigure))]);
+				figurename = [ FileName ' - TT ' num2str(Kategorie{kat}) ' - Plot ' num2str(ceil(n/PlotsInFigure))];
             elseif SubPlots == 0 && n==1 %jestli se nekresli subploty a je to prvni track
-                figure('Name',[ FileName ' - TT ' num2str(Kategorie{kat}) ]); %nastartuju obrazek
+                figurename = [ FileName ' - TT ' num2str(Kategorie{kat}) ]; %nastartuju obrazek
                 StartPlot = true; %a budu ho chcit inicializovat
             end
+			figure('Name',figurename,'position', [50, 50, 900, 700]);
             if SubPlots == 1 %mam obrazky rozdelit do ruznych subplotu
                 PlotPosition=n;
                 while PlotPosition>PlotsInFigure 
@@ -498,9 +502,9 @@ function Obrazky(FD,PlotsInFigure,FileName,SubPlots)
             plot([ArenaLocX(2) ArenaLocX(2)+IndicatedAng(1)],[0-ArenaLocY(2) 0-(ArenaLocY(2)+IndicatedAng(2))],'r', 'LineWidth',2)          
             plot(ArenaLocX(2)+IndicatedAng(1),0-(ArenaLocY(2)+IndicatedAng(2)),'.r' ); 
             
-            
-
             axis equal
+			axis ij
+			set ( gca, 'xdir', 'reverse' )
             axis off %vymazu osy grafu, zustane je cerny ctverec
         end
     end

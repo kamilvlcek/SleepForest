@@ -3,9 +3,11 @@ function out=DetStartEndField(Xpos,Ypos,X,Y)
 %track during the trial, and X,Y coordinates of the centers of the 9 fields
 % the function is called by function ReadTR
 
-FieldRadius=500;
+FieldRadius=1000;
 
 for i=1:9
+%     i %%%
+%     dist(Xpos(1),Ypos(1),X(i),Y(i)) %%%
     if dist(Xpos(1),Ypos(1),X(i),Y(i))< FieldRadius
         StartField=i;
     end 
