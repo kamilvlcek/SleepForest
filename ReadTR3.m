@@ -7,7 +7,7 @@ function out=ReadTR3(FileNameIn)
 
 PlotsInFigure=15; %how many subplots can be in one image
 if ~exist('SubPlots','var') 
-    SubPlots = 1;   %defaultne se delaji subploty
+    SubPlots = 1;   %subplots shown by default
 end
 out{1,1}=FileNameIn;
 out{2,1}='trial';
@@ -40,22 +40,22 @@ NL=0;line=[]; %line number
 %while strcmp(line(1:6),' 0.000')==0
 fprintf('        ');
 %READing THE POSITIONs OF THE TENTs
-while isempty(strfind(line, 'Ukazte na')) %tim ukoncuju hledani stanu
+while ~contains(line, 'Ukazte na')  %that concludes the search for a tent
     line=fgetl(FileID);
 	fprintf('\b\b\b\b\b\b%5i', NL);
     NL=NL+1;
-    if strfind(line, 'Aim position')
+    if contains(line, 'Aim position') 
         Aim=GetAimPositions(line); 
-        AimX=Aim{1}; %9x6 double - ctverce a stany v nich
+        AimX=Aim{1}; %9x6 double - squaers and tents inside 
         AimY=Aim{2}; 
     end
-    if strfind(line,'Avatar location changed:')     %%%
-        ba=strfind(line, '[');
-        bb=strfind(line, ',');
-        bc=strfind(line, ']');
-        StartLocX=str2num(line(ba+1:bb-1));
-        StartLocY=str2num(line(bb+2:bc-1));
-    end                                             %%%
+%     if contains(line,'Avatar location changed:')  %not used
+%         ba=strfind(line, '[');
+%         bb=strfind(line, ',');
+%         bc=strfind(line, ']');
+%         StartLocX=str2double(line(ba+1:bb-1)); 
+%         StartLocY=str2double(line(bb+2:bc-1));
+%     end                                             %%%
 end
 n=strfind(line, 'text:Najdete');
 Cil=line(n+11:end-2);
@@ -63,7 +63,7 @@ DLN=0;
 firstdataline=0;
 NumErr=0;
 
-X(1)=mean(AimX(1,:));Y(1)=mean(AimY(1,:)); %stredy jednotlivych ctvercu, X a Y, jako mean pozice stanu
+X(1)=mean(AimX(1,:));Y(1)=mean(AimY(1,:)); % centers of individual squares, X a Y, jako mean pozice stanu
 X(2)=mean(AimX(2,:));Y(2)=mean(AimY(2,:));
 X(3)=mean(AimX(3,:));Y(3)=mean(AimY(3,:));
 X(4)=mean(AimX(4,:));Y(4)=mean(AimY(4,:));
@@ -81,31 +81,31 @@ while feof(FileID)==0
     NL=NL+1;
     if strcmp(line(1),' ') %Dataline
         DLN=DLN+1;
-        if firstdataline==0 %prvni radka s popisem sloupcu
+        if firstdataline==0 %first row with column description
             divider=line(7); 
             firstdataline=1;
         end
         k=strfind(line, divider);
-        %tri udaje, ktere si beru tracku - udaju o pozici subjektu
-        time(DLN)=str2num(line(2:k(1)-1));
-        ArenaLocX(DLN)=str2num(line(k(2)+1:k(3)-1)); %pozice subjektu = track v jednom trialu
-        ArenaLocY(DLN)=str2num(line(k(3)+1:k(4)-1));
+        %three data from the track - data about the position of the subject
+        time(DLN)=str2double(line(2:k(1)-1));
+        ArenaLocX(DLN)=str2double(line(k(2)+1:k(3)-1)); %pozice subjektu = track v jednom trialu
+        ArenaLocY(DLN)=str2double(line(k(3)+1:k(4)-1));
     end   
-    if strfind(line,'space') %ukazani na cil
-        Angle=str2num(line(k(7)+1:k(8)-1));
+    if contains(line,'space') %pointing to the target
+        Angle=str2double(line(k(7)+1:k(8)-1));
         Angle=rem(Angle,360);
         if Angle<0
             Angle=Angle+360;
         end
     end 
-    if strfind(line,'Avatar location changed:')     %%%
-        ba=strfind(line, '[');
-        bb=strfind(line, ',');
-        bc=strfind(line, ']');
-        StartLocX=str2num(line(ba+1:bb-1));
-        StartLocY=str2num(line(bb+2:bc-1));
-    end                                             %%%
-    if strfind(line, 'text:Najdete')
+%     if contains(line,'Avatar location changed:')     %not used
+%         ba=strfind(line, '[');
+%         bb=strfind(line, ',');
+%         bc=strfind(line, ']');
+%         StartLocX=str2double(line(ba+1:bb-1)); %not used
+%         StartLocY=str2double(line(bb+2:bc-1)); %not used
+%     end                                             %%%
+    if contains(line, 'text:Najdete')
         time=[];
         ArenaLocX=[];
         ArenaLocY=[];
@@ -113,14 +113,14 @@ while feof(FileID)==0
         NumErr=0;
         ErrBox=[];
         ErrGoal=[];
-        n=strfind(line, 'text:Najdete);
-        Cil=line(n+11:end-2); %jmeno mista napr KOLIBRIKA
+        n=strfind(line, 'text:Najdete');
+        Cil=line(n+11:end-2); %goal name, e.g. KOLIBRIKA
     end 
-    if strfind(line, 'Avoid entrance:') %vstup do chybneho stanu
+    if contains(line, 'Avoid entrance:') %entering the wrong tent
 %         NumErr=NumErr+1;
 %         n=strfind(line, 'Avoid entrance:');
         ErrAim=line(n+15:n+19); %napr AimA2 
-        if strcmp(ErrAim(4),'A') %cislo ctverce
+        if strcmp(ErrAim(4),'A') %square number
             ErrBox(NumErr)=1; %#ok<*AGROW>
         elseif strcmp(ErrAim(4),'B')
 %             ErrBox(NumErr)=2;
@@ -138,22 +138,22 @@ while feof(FileID)==0
 %             ErrBox(NumErr)=8;
         elseif strcmp(ErrAim(4),'I')
 %             ErrBox(NumErr)=9;
-%         end        
+        end        
 %         ErrGoal(NumErr)=str2num(ErrAim(5));
-%     end
-
+     end
+    
     
     %ukonceni hledani cile 
-    if length(strfind(line, 'Aim entrance:'))>0 || length(strfind(line, 'Aim not found:'))>0
+    if contains(line, 'Aim entrance:') || contains(line, 'Aim not found:')
 
         SearchNum=SearchNum+1; %trial number
         
-        if strfind(line, 'Aim entrance:')
+        if contains(line, 'Aim entrance:')
             n=strfind(line, 'Aim entrance:');
             CurrentAim=line(n+13:n+17); %%%
             AimFound=1;
         end
-        if strfind(line, 'Aim not found:')
+        if contains(line, 'Aim not found:')
             n=strfind(line, 'Aim not found:');
             CurrentAim=line(n+14:n+18); %%%
             AimFound=0;
@@ -177,7 +177,7 @@ while feof(FileID)==0
         elseif strcmp(CurrentAim(4),'I')
             CurBox=9;
         end      
-        CurGoal=str2num(CurrentAim(5)); %cislo stanu ve ctverci s cilem
+        CurGoal=str2double(CurrentAim(5)); %cislo stanu ve ctverci s cilem
         
         StartEndField=DetStartEndField(ArenaLocX(2:end),ArenaLocY(2:end),X,Y) %; %find start and end field - uz jenom start field
 		CurBox
@@ -211,7 +211,7 @@ while feof(FileID)==0
             AngleError=AngleError+360;
         end
                
-        %naplnim figure data, abych pozdeji mohl kreslit
+        %fill in the figure data that we can draw later
         FIGUREDATA(SearchNum).X = X;
         FIGUREDATA(SearchNum).Y = Y;
         FIGUREDATA(SearchNum).ArenaLocX = ArenaLocX;
@@ -249,7 +249,7 @@ while feof(FileID)==0
         Kategorie = [1 2 3 3 4 4 4 5 5 5 5 5 ];%trenovane dvojice, prima trasa, 1 roh, 2 rohy, 3 a 4 rohy
         out{2+SearchNum,18}=Kategorie(TrialType(1)); %'trial type Kamil'       
         
-        clear Angle; %kdyby treba v pristim pokuse neukazal
+        clear Angle; %if subject hadn't point to target in the next trial
     end
 end
 
@@ -357,7 +357,7 @@ for TrialType=1:12
     NumTrainedPairsTests=0; NumAimFound=0; ErrTrainedPairsTests=0; PathDevTrainedPairsTests=0; AngleErrTrainedPairsTests=0;
     NumNans = 0;
     for i=1:SearchNum
-        if out{2+i,17}==TrialType;  
+        if out{2+i,17}==TrialType  
             NumTrainedPairsTests=NumTrainedPairsTests+1;
             NumAimFound=NumAimFound+out{2+i,4};
             ErrTrainedPairsTests=ErrTrainedPairsTests+out{2+i,8};
