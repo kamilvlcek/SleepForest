@@ -1,7 +1,9 @@
 function out=GetAimPositionsb(line)
 %prepared in March 2023
-
-        %aimA
+%returns {AimX(1,9),AimY(1,9)}, with ordered positions of AimA,AimB ... AimI
+AimX = zeros(1,9); % prealocate - Kamil
+AimY = zeros(1,9);
+        %aimA        
         k=strfind(line,'AimA[');
         l=strfind(line(k(1):k(1)+20),',');
         AimX(1)=str2num(line(k(1)+5:k(1)+l(1)-2));

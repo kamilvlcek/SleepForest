@@ -1,5 +1,5 @@
 function ang=XY2ang(X, Y)  %ang in rad
-
+%[x,y] to angle in rad, relative to [0,0]
 if X>0 && Y==0
     ang=0;
 end

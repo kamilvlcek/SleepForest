@@ -1,5 +1,5 @@
 function out=DistAng2Pos(dist,ang)  %ang in rad
-
+% angle in rad to in [x,y] coordinates, distant dist from [0,0]
 if ang<0
     ang=ang+(2*pi);
 end
