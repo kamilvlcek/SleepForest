@@ -5,6 +5,7 @@ function out=ReadTR3(FileNameIn,SubPlots,OrderTrials)
 
 % to do: angles, summary data
 
+SearchAnimal=0; % added March 6 2024
 PlotsInFigure=12; %how many subplots can be in one figure
 if ~exist('SubPlots','var') 
     SubPlots = 1;   %subplots shown by default
@@ -66,19 +67,6 @@ while isempty(strfind(line, 'KOLO'))   %e.g. JavaTime:16:35:02.303; Text.modify(
         AimY=Aim{2}; 
         break; %useless to continue, we have the aims positions
     end
-%     if contains(line,'Avatar location changed:')  %not used
-%         ba=strfind(line, '[');
-%         bb=strfind(line, ',');
-%         bc=strfind(line, ']');
-%         StartLocX=str2double(line(ba+1:bb-1)); 
-%         StartLocY=str2double(line(bb+2:bc-1));
-%     end                                             %%%
-%     if strfind(line, 'Orientation Marks Shown') %%%
-%         PosNA=strfind(line, 'North Compas');
-%         NorthArrow=str2num(line(PosNA+13));
-%         PosSt=strfind(line, 'Statues');
-%         Statues=str2num(line(PosSt+10));
-%     end
 end
 % n=strfind(line, 'text:Najdete'); % WHy is this here?
 % Cil=line(n+11:end-2); % Why is this here?
@@ -157,6 +145,7 @@ while feof(FileID)==0
         ErrLocY=[];
         n=strfind(line, 'text:Najdete');
         Cil=line(n+13:end-2); %goal name, e.g. KOLIBRIKA
+        SearchAnimal=1; % added March 6 2024
     end 
 %     if contains(line, 'Avoid entrance:') %entering the wrong tent
 % %         NumErr=NumErr+1;
@@ -191,8 +180,8 @@ while feof(FileID)==0
       ErrLocX(NumErr)=ArenaLocX(DLN); %subject position at error
       ErrLocY(NumErr)=ArenaLocY(DLN);
     end
-    if length(strfind(line, 'VYBORNE !'))>0 || length(strfind(line, 'NEPOVEDLO SE VAM NAJIT CIL'))>0
-
+    if length(strfind(line, 'VYBORNE !'))>0 || length(strfind(line, 'NEPOVEDLO SE VAM NAJIT CIL'))>0 && SearchAnimal==1 % modified March 6 2024
+        SearchAnimal=0; % added March 6 2024
         SearchNum=SearchNum+1; %trial number
         
         if strfind(line, 'VYBORNE !')
@@ -482,33 +471,33 @@ out{13+SearchNum,7}='ErrTrainedPairsTests/NumTrainedPairsTests';
 out{13+SearchNum,8}='PathDevTrainedPairsTests/NumTrainedPairsTests';
 out{13+SearchNum,9}='AngleErrTrainedPairsTests/(NumTrainedPairsTests-NumNans)';
     
-for TrialType2=1:12
-    NumTrainedPairsTests=0; NumAimFound=0; ErrTrainedPairsTests=0; PathDevTrainedPairsTests=0; AngleErrTrainedPairsTests=0;
-    NumNans = 0;
-    for i=1:SearchNum %SearchNum is now total number of trials
-        if out{2+i,19}==TrialType2  
-            NumTrainedPairsTests=NumTrainedPairsTests+1;
-            NumAimFound=NumAimFound+out{2+i,4};
-            ErrTrainedPairsTests=ErrTrainedPairsTests+out{2+i,8};
-            PathDevTrainedPairsTests=PathDevTrainedPairsTests+out{2+i,7};
-            if isnan(out{2+i,16}) %pokud treba neukazal v nejakem trialu - kamil
-               NumNans = NumNans +1; 
-            else
-               AngleErrTrainedPairsTests=AngleErrTrainedPairsTests+abs(out{2+i,16});
-            end
-        end
-    end
+% for TrialType2=1:12
+%     NumTrainedPairsTests=0; NumAimFound=0; ErrTrainedPairsTests=0; PathDevTrainedPairsTests=0; AngleErrTrainedPairsTests=0;
+%     NumNans = 0;
+%     for i=1:SearchNum %SearchNum is now total number of trials
+%         if out{2+i,19}==TrialType2  
+%             NumTrainedPairsTests=NumTrainedPairsTests+1;
+%             NumAimFound=NumAimFound+out{2+i,4};
+%             ErrTrainedPairsTests=ErrTrainedPairsTests+out{2+i,8};
+%             PathDevTrainedPairsTests=PathDevTrainedPairsTests+out{2+i,7};
+%             if isnan(out{2+i,16}) %pokud treba neukazal v nejakem trialu - kamil
+%                NumNans = NumNans +1; 
+%             else
+%                AngleErrTrainedPairsTests=AngleErrTrainedPairsTests+abs(out{2+i,16});
+%             end
+%         end
+%     end
+% 
+%     out{13+SearchNum+TrialType2,5}=NumTrainedPairsTests; %should start at row 43 
+%     out{13+SearchNum+TrialType2,6}=NumAimFound/NumTrainedPairsTests;
+%     out{13+SearchNum+TrialType2,7}=ErrTrainedPairsTests/NumTrainedPairsTests;
+%     out{13+SearchNum+TrialType2,8}=PathDevTrainedPairsTests/NumTrainedPairsTests;
+%     out{13+SearchNum+TrialType2,9}=AngleErrTrainedPairsTests/(NumTrainedPairsTests-NumNans);
+% end
 
-    out{13+SearchNum+TrialType2,5}=NumTrainedPairsTests; %should start at row 43 
-    out{13+SearchNum+TrialType2,6}=NumAimFound/NumTrainedPairsTests;
-    out{13+SearchNum+TrialType2,7}=ErrTrainedPairsTests/NumTrainedPairsTests;
-    out{13+SearchNum+TrialType2,8}=PathDevTrainedPairsTests/NumTrainedPairsTests;
-    out{13+SearchNum+TrialType2,9}=AngleErrTrainedPairsTests/(NumTrainedPairsTests-NumNans);
-end
-
-%kamil - tabulka prumeru podle TrialType Kamil
+%kamil - table of means by 'TrialType Kamil'
 D = cell2mat(out(3:2+SearchNum,4:20)); %data trialu do matrix
-outY = 20+SearchNum; %od ktereho radku zacim psat dal svoje data
+outY = 13+SearchNum; %should start at row 44
 out{outY,1} = 'TrialType Kamil';
 for TrialTypeK = 1:5
     out{outY + TrialTypeK,1} = TrialTypeK;
