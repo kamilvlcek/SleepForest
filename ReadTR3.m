@@ -1,5 +1,6 @@
 function out=ReadTR3(FileNameIn,SubPlots,OrderTrials)
 %process the test data, plot the graph and return the result table
+%analysis of training and test trials - March 11, 2024
 %compute proportion of real path length to optimal one
 %categorize tasks according to the demands/difficulty level
 
@@ -15,15 +16,25 @@ if ~exist('OrderTrials','var')
     OrderTrials = 0;   %if to order trials from best to worse
 end
 
-%values for categoris 3 difficulty levels x 2 North/Statues shown, across all trials
+%values for categoris 3 difficulty levels x 2 North/Statues/both shown, across all trials
 NumTr(3,2)=zeros; %num of trials (TrialTypeKE,Cues)
 NumAimFound(3,2)=zeros; %num success
 TotNumErr(3,2)=zeros; %num errors
-SumPathDev(3,2)=zeros; % path dev
+SumPathDev(3,2)=zeros; % path dev 
 SumAbsAngErr(3,2)=zeros;
+SumOptToRealPath(3,2)=zeros;  % 'path efficiency';
+stav=0; %%state - 1-pointing , 2- navigation
+
+if contains(FileNameIn,'\')
+    FullFileName = FileNameIn;
+else
+    FullFileName=['d:\prace\mff\data\aappSeg\NUDZ\results\spanav\' FileNameIn ];
+end
+%FileName=['D:\Users\kelemen\Data\VRKamil\' FileNameIn '.tr'];
+FileName = basename(FullFileName); %without path
 
 %output table - first row
-out{1,1}=FileNameIn;
+out{1,1}=FileName;
 out{2,1}='trial';
 out{2,2}='aim';
 out{2,3}='animal';
@@ -45,10 +56,9 @@ out{2,18}='angle error';
 %out{2,19}='trial category';
 out{2,19}='trial type Kamil';
 out{2,20}='Cues'; 
+out{2,21}='path efficiency';
 
-FullFileName=['d:\prace\mff\data\aappSeg\NUDZ\results\spanav\' FileNameIn ];
-%FileName=['D:\Users\kelemen\Data\VRKamil\' FileNameIn '.tr'];
-FileName = basename(FullFileName); %without path
+
 
 FileID=fopen(FullFileName);
 
@@ -74,6 +84,7 @@ DLN=0; %index of data line , reset for each new goal
 firstdataline=0;
 NumErr=0;
 Cues = 0; % Cues: 1 = North shown, 2 = Statues shown
+LastMeasuresForAim = zeros(9,3); %columns: 'duration', 'path efficiency' 'angle error', rows: CurBox 1-9 (tj aims), kamil 7.6.2024
 
 %figure
 FIGUREDATA = {}; %there I will collect data for the images, so I can then draw them in manual order
@@ -275,7 +286,7 @@ while feof(FileID)==0
         out{2+SearchNum,6}=AimFound;
         out{2+SearchNum,7}=Duration; %in sec
         out{2+SearchNum,8}=Length; %LengthofTrack
-        out{2+SearchNum,9}=ToOptimalLength;
+        out{2+SearchNum,9}=ToOptimalLength; %'path deviaton from optimal';
         out{2+SearchNum,10}=NumErr; %'errors'
         out{2+SearchNum,11}=StartEndField(1); %'StartField' % start field - int 1-9
         out{2+SearchNum,12}=CurBox;  %'GoalField' %number of square A-I is 1-9
@@ -289,13 +300,16 @@ while feof(FileID)==0
         Kategorie = [1 2 3 3 4 4 4 5 5 5 5 5 ]; %trenovane dvojice, prima trasa, 1 roh, 2 rohy, 3 a 4 rohy
         out{2+SearchNum,19}=Kategorie(TrialType(1)); %'trial type Kamil'       
         out{2+SearchNum,20}=Cues; %Cues: 1 = North shown, 2 = Statues shown  
+        out{2+SearchNum,21}=1/ToOptimalLength; %kamil 8.4.2024 'path efficiency';
         
         %edo 6.12.2023 %values for categoris 3 difficulty levels x 2 North/Statues shown, across all trials
         NumTr(TrialTypeKE,Cues)=NumTr(TrialTypeKE,Cues)+1; % Cues: 1 = North shown, 2 = Statues shown
         NumAimFound(TrialTypeKE,Cues)=NumAimFound(TrialTypeKE,Cues)+AimFound;   %num success
         TotNumErr(TrialTypeKE,Cues)=TotNumErr(TrialTypeKE,Cues)+NumErr; %num errors
-        SumPathDev(TrialTypeKE,Cues)=SumPathDev(TrialTypeKE,Cues)+ToOptimalLength;
+        SumPathDev(TrialTypeKE,Cues)=SumPathDev(TrialTypeKE,Cues)+ToOptimalLength; %path deviation
         SumAbsAngErr(TrialTypeKE,Cues)=SumAbsAngErr(TrialTypeKE,Cues)+abs(AngleError);
+        SumOptToRealPath(TrialTypeKE,Cues)=SumOptToRealPath(TrialTypeKE,Cues)+(1/ToOptimalLength); % 'path efficiency';
+        LastMeasuresForAim(CurBox,:) = [Duration, 1/ToOptimalLength,abs(AngleError )]; %columns: 'duration', 'path efficiency' 'angle error',
         
         clear Angle; %if subject hadn't point to target in the next trial
     end
@@ -318,6 +332,7 @@ out{2+SearchNum+3,7}='prop. aim found';%
 out{2+SearchNum+3,8}='mean N errors';% 'Angle Error';
 out{2+SearchNum+3,9}='mean path deviation';
 out{2+SearchNum+3,10}='mean ABS angle error';
+out{2+SearchNum+3,11}='mean path efficiency'; %kamil 19.4.2024
 
 out{2+SearchNum+4,2}='north only'; %'landmarks'
 out{2+SearchNum+4,3}='1'; %'difficulty level' %trialtype 1-3
@@ -326,8 +341,9 @@ out{2+SearchNum+4,5}='0'; %'N of turns in sequence';
 out{2+SearchNum+4,6}=NumTr(1,1); %'N' (TrialTypeKE,Cues)
 out{2+SearchNum+4,7}=NumAimFound(1,1)/NumTr(1,1); %'prop. aim found'
 out{2+SearchNum+4,8}=TotNumErr(1,1)/NumTr(1,1); %'mean N errors'
-out{2+SearchNum+4,9}=SumPathDev(1,1)/NumTr(1,1); %'mean path deviation'
+out{2+SearchNum+4,9}=SumPathDev(1,1)/NumTr(1,1);  %'mean path deviation';
 out{2+SearchNum+4,10}=SumAbsAngErr(1,1)/NumTr(1,1); %'mean ABS angle error'
+out{2+SearchNum+4,11}=SumOptToRealPath(1,1)/NumTr(1,1);  %'mean path efficiency'; %kamil 19.4.2024
 
 out{2+SearchNum+5,2}='north only';
 out{2+SearchNum+5,3}='2';
@@ -338,6 +354,7 @@ out{2+SearchNum+5,7}=NumAimFound(2,1)/NumTr(2,1);
 out{2+SearchNum+5,8}=TotNumErr(2,1)/NumTr(2,1);
 out{2+SearchNum+5,9}=SumPathDev(2,1)/NumTr(2,1);
 out{2+SearchNum+5,10}=SumAbsAngErr(2,1)/NumTr(2,1);
+out{2+SearchNum+5,11}=SumOptToRealPath(2,1)/NumTr(2,1);
 
 out{2+SearchNum+6,2}='north only';
 out{2+SearchNum+6,3}='3';
@@ -348,6 +365,7 @@ out{2+SearchNum+6,7}=NumAimFound(3,1)/NumTr(3,1);
 out{2+SearchNum+6,8}=TotNumErr(3,1)/NumTr(3,1);
 out{2+SearchNum+6,9}=SumPathDev(3,1)/NumTr(3,1);
 out{2+SearchNum+6,10}=SumAbsAngErr(3,1)/NumTr(3,1);
+out{2+SearchNum+6,11}=SumOptToRealPath(3,1)/NumTr(3,1);
 
 out{2+SearchNum+7,2}='statues only';
 out{2+SearchNum+7,3}='1';
@@ -358,6 +376,7 @@ out{2+SearchNum+7,7}=NumAimFound(1,2)/NumTr(1,2);
 out{2+SearchNum+7,8}=TotNumErr(1,2)/NumTr(1,2);
 out{2+SearchNum+7,9}=SumPathDev(1,2)/NumTr(1,2);
 out{2+SearchNum+7,10}=SumAbsAngErr(1,2)/NumTr(1,2);
+out{2+SearchNum+7,11}=SumOptToRealPath(1,2)/NumTr(1,2);
 
 out{2+SearchNum+8,2}='statues only';
 out{2+SearchNum+8,3}='2';
@@ -368,6 +387,7 @@ out{2+SearchNum+8,7}=NumAimFound(2,2)/NumTr(2,2);
 out{2+SearchNum+8,8}=TotNumErr(2,2)/NumTr(2,2);
 out{2+SearchNum+8,9}=SumPathDev(2,2)/NumTr(2,2);
 out{2+SearchNum+8,10}=SumAbsAngErr(2,2)/NumTr(2,2);
+out{2+SearchNum+8,11}=SumOptToRealPath(2,2)/NumTr(2,2);
 
 out{2+SearchNum+9,2}='statues only';
 out{2+SearchNum+9,3}='3';
@@ -378,6 +398,7 @@ out{2+SearchNum+9,7}=NumAimFound(3,2)/NumTr(3,2);
 out{2+SearchNum+9,8}=TotNumErr(3,2)/NumTr(3,2);
 out{2+SearchNum+9,9}=SumPathDev(3,2)/NumTr(3,2);
 out{2+SearchNum+9,10}=SumAbsAngErr(3,2)/NumTr(3,2);
+out{2+SearchNum+9,11}=SumOptToRealPath(3,2)/NumTr(3,2);
 
 %memory for trained pairs (trial category 1) beginning
 % NumTrainedPairsTests=0; NumAimFound=0; ErrTrainedPairsTests=0; PathDevTrainedPairsTests=0; AngleErrTrainedPairsTests=0;
@@ -463,51 +484,17 @@ out{2+SearchNum+9,10}=SumAbsAngErr(3,2)/NumTr(3,2);
 % out{2+SearchNum+15,2}='sequence of eight trained pairs, (always with four turns)';
 % out{2+SearchNum+15,3}=8;
 % out{2+SearchNum+15,4}=4;
+ 
 
-%KAMIL 16.5.2025 - co je tohle? v pozdejsich verzich to uz neni
-out{13+SearchNum,5}='NumTrainedPairsTests'; %should start at row 43 
-out{13+SearchNum,6}='NumAimFound/NumTrainedPairsTests';
-out{13+SearchNum,7}='ErrTrainedPairsTests/NumTrainedPairsTests';
-out{13+SearchNum,8}='PathDevTrainedPairsTests/NumTrainedPairsTests';
-out{13+SearchNum,9}='AngleErrTrainedPairsTests/(NumTrainedPairsTests-NumNans)';
-    
-% for TrialType2=1:12
-%     NumTrainedPairsTests=0; NumAimFound=0; ErrTrainedPairsTests=0; PathDevTrainedPairsTests=0; AngleErrTrainedPairsTests=0;
-%     NumNans = 0;
-%     for i=1:SearchNum %SearchNum is now total number of trials
-%         if out{2+i,19}==TrialType2  
-%             NumTrainedPairsTests=NumTrainedPairsTests+1;
-%             NumAimFound=NumAimFound+out{2+i,4};
-%             ErrTrainedPairsTests=ErrTrainedPairsTests+out{2+i,8};
-%             PathDevTrainedPairsTests=PathDevTrainedPairsTests+out{2+i,7};
-%             if isnan(out{2+i,16}) %pokud treba neukazal v nejakem trialu - kamil
-%                NumNans = NumNans +1; 
-%             else
-%                AngleErrTrainedPairsTests=AngleErrTrainedPairsTests+abs(out{2+i,16});
-%             end
-%         end
-%     end
-% 
-%     out{13+SearchNum+TrialType2,5}=NumTrainedPairsTests; %should start at row 43 
-%     out{13+SearchNum+TrialType2,6}=NumAimFound/NumTrainedPairsTests;
-%     out{13+SearchNum+TrialType2,7}=ErrTrainedPairsTests/NumTrainedPairsTests;
-%     out{13+SearchNum+TrialType2,8}=PathDevTrainedPairsTests/NumTrainedPairsTests;
-%     out{13+SearchNum+TrialType2,9}=AngleErrTrainedPairsTests/(NumTrainedPairsTests-NumNans);
-% end
-
-%kamil - table of means by 'TrialType Kamil'
-D = cell2mat(out(3:2+SearchNum,4:20)); %data trialu do matrix
-outY = 13+SearchNum; %should start at row 44
-out{outY,1} = 'TrialType Kamil';
-for TrialTypeK = 1:5
-    out{outY + TrialTypeK,1} = TrialTypeK;
-    iD = D(:,16)==TrialTypeK; %index v D s trialtypeK
-    out{outY + TrialTypeK,5} = sum(iD); %pocet trialu
-    out{outY + TrialTypeK,6} = mean(D(iD,1)); % %nalezeni cile
-    out{outY + TrialTypeK,7} = mean(D(iD,5)); % prumerny pocet chyb
-    out{outY + TrialTypeK,8} = mean(D(iD,4)); % mean path deviation
-    out{outY + TrialTypeK,9} = nanmean(abs(D(iD,13))); % mean ABS angle error
+%LastMeasuresForAim kamil 7.6.2024 - hodnoty z posledniho hledani cile 1-9
+row = 13+SearchNum; %should start at row 44
+out{row,1} = 'LastMeasuresForAim';
+[out{row+1, 1:5}] = deal('Last goal search for each field','GoalField', 'duration', 'path efficiency', 'angle error');
+for j=1:9
+	[out{row+j+1,2:5}]=deal(j,LastMeasuresForAim(j,1), LastMeasuresForAim(j,2), LastMeasuresForAim(j,3));
 end
+
+xlswrite([FileNameIn '.xls'], out);
 
 end
 
