@@ -1,4 +1,4 @@
-function out=ReadTR3(FileNameIn,SubPlots,OrderTrials)
+function out=ReadTR3(FileNameIn,SubPlots,OrderTrials, TrajectoriesToShow)
 %process the test data, plot the graph and return the result table
 %analysis of training and test trials - March 11, 2024
 %compute proportion of real path length to optimal one
@@ -12,26 +12,28 @@ if ~exist('SubPlots','var')
     SubPlots = 1;   %subplots shown by default
 end
 
-if ~exist('OrderTrials','var') 
+if ~exist('OrderTrials','var') || isempty(OrderTrials)
     OrderTrials = 0;   %if to order trials from best to worse
 end
 
-%values for categoris 3 difficulty levels x 2 North/Statues/both shown, across all trials
-NumTr(3,2)=zeros; %num of trials (TrialTypeKE,Cues)
-NumAimFound(3,2)=zeros; %num success
-TotNumErr(3,2)=zeros; %num errors
-SumPathDev(3,2)=zeros; % path dev 
-SumAbsAngErr(3,2)=zeros;
-SumOptToRealPath(3,2)=zeros;  % 'path efficiency';
+if ~exist('TrajectoriesToShow','var'), TrajectoriesToShow=[]; end
+
+%values for categoris 3 difficulty levels x 3 (North/Statues/both shown, across all trials) x 3  (all trials, first part , last part)
+NumTr(3,3,3)=zeros; %num of trials (TrialTypeKE,Cues) 
+NumAimFound(3,3,3)=zeros; %num success
+TotNumErr(3,3,3)=zeros; %num errors
+SumPathDev(3,3,3)=zeros; % path dev 
+SumAbsAngErr(3,3,3)=zeros;
+SumOptToRealPath(3,3,3)=zeros;  % 'path efficiency';
 stav=0; %%state - 1-pointing , 2- navigation
 
 if contains(FileNameIn,'\')
-    FullFileName = FileNameIn;
+    FullFileName = FileNameIn;  % complete trajectory with parh
 else
     FullFileName=['d:\prace\mff\data\aappSeg\NUDZ\results\spanav\' FileNameIn ];
 end
 %FileName=['D:\Users\kelemen\Data\VRKamil\' FileNameIn '.tr'];
-FileName = basename(FullFileName); %without path
+FileName = basename(FullFileName); %without path, only filename
 
 %output table - first row
 out{1,1}=FileName;
@@ -49,7 +51,7 @@ out{2,11}='StartField';
 out{2,12}='GoalField';
 out{2,13}='N of trained pairs in sequence';
 out{2,14}='N of turns in sequence';
-out{2,15}='trial type'; %category Alena 
+out{2,15}='Level=trial type'; %category Alena 
 out{2,16}='angle indicated';
 out{2,17}='angle real';
 out{2,18}='angle error';
@@ -127,8 +129,10 @@ while feof(FileID)==0
             Cues=1;  % 1 = North shown
         elseif NorthArrow==0 && Statues==1
             Cues=2;  % 2 = Statues shown
+        elseif NorthArrow==1 && Statues==1  %% 27 Dec 2024 - training - both types of cues are shown
+            Cues=3;  %% 27 Dec 2024
         else
-            Cues=0;  %not defined 
+            Cues=0;  %not defined             
         end
     end
     if strfind(line, 'Aim search:') % e.g. Aim search:AimA
@@ -158,31 +162,6 @@ while feof(FileID)==0
         Cil=line(n+13:end-2); %goal name, e.g. KOLIBRIKA
         SearchAnimal=1; % added March 6 2024
     end 
-%     if contains(line, 'Avoid entrance:') %entering the wrong tent
-% %         NumErr=NumErr+1;
-% %         n=strfind(line, 'Avoid entrance:');
-%         ErrAim=line(n+15:n+19); %napr AimA2 
-%         if strcmp(ErrAim(4),'A') %square number
-%             ErrBox(NumErr)=1; %#ok<*AGROW>
-%         elseif strcmp(ErrAim(4),'B')
-% %             ErrBox(NumErr)=2;
-%         elseif strcmp(ErrAim(4),'C')
-% %             ErrBox(NumErr)=3;
-%         elseif strcmp(ErrAim(4),'D')
-% %             ErrBox(NumErr)=4;
-%         elseif strcmp(ErrAim(4),'E')
-% %             ErrBox(NumErr)=5;
-%         elseif strcmp(ErrAim(4),'F')
-% %             ErrBox(NumErr)=6;
-%         elseif strcmp(ErrAim(4),'G')
-% %             ErrBox(NumErr)=7;
-%         elseif strcmp(ErrAim(4),'H')
-% %             ErrBox(NumErr)=8;
-%         elseif strcmp(ErrAim(4),'I')
-% %             ErrBox(NumErr)=9;
-%         end        
-% %         ErrGoal(NumErr)=str2num(ErrAim(5));
-%      end
     
     
     %ukonceni hledani cile 
@@ -260,6 +239,7 @@ while feof(FileID)==0
         %FIGUREDATA(SearchNum).Y = Y;
         
         %SearchNum is trial number
+        FIGUREDATA(SearchNum).Trial = SearchNum; %subject trajectory
         FIGUREDATA(SearchNum).ArenaLocX = ArenaLocX; %subject trajectory
         FIGUREDATA(SearchNum).ArenaLocY = ArenaLocY;
         FIGUREDATA(SearchNum).AimX = AimX; %1x9 double - aim areas for 9 squres
@@ -311,195 +291,174 @@ while feof(FileID)==0
         SumOptToRealPath(TrialTypeKE,Cues)=SumOptToRealPath(TrialTypeKE,Cues)+(1/ToOptimalLength); % 'path efficiency';
         LastMeasuresForAim(CurBox,:) = [Duration, 1/ToOptimalLength,abs(AngleError )]; %columns: 'duration', 'path efficiency' 'angle error',
         
+        if SearchNum<13 % first 12 trials
+            NumTr(TrialTypeKE,Cues,2)=NumTr(TrialTypeKE,Cues,2)+1;
+            NumAimFound(TrialTypeKE,Cues,2)=NumAimFound(TrialTypeKE,Cues,2)+AimFound;
+            TotNumErr(TrialTypeKE,Cues,2)=TotNumErr(TrialTypeKE,Cues,2)+NumErr;
+            SumPathDev(TrialTypeKE,Cues,2)=SumPathDev(TrialTypeKE,Cues,2)+ToOptimalLength;
+            SumAbsAngErr(TrialTypeKE,Cues,2)=SumAbsAngErr(TrialTypeKE,Cues,2)+abs(AngleError);
+            SumOptToRealPath(TrialTypeKE,Cues,2)=SumOptToRealPath(TrialTypeKE,Cues,2)+(1/ToOptimalLength);        
+        elseif SearchNum>18 && SearchNum<31 %last 12 trials
+            NumTr(TrialTypeKE,Cues,3)=NumTr(TrialTypeKE,Cues,3)+1;
+            NumAimFound(TrialTypeKE,Cues,3)=NumAimFound(TrialTypeKE,Cues,3)+AimFound;
+            TotNumErr(TrialTypeKE,Cues,3)=TotNumErr(TrialTypeKE,Cues,3)+NumErr;
+            SumPathDev(TrialTypeKE,Cues,3)=SumPathDev(TrialTypeKE,Cues,3)+ToOptimalLength;
+            SumAbsAngErr(TrialTypeKE,Cues,3)=SumAbsAngErr(TrialTypeKE,Cues,3)+abs(AngleError);
+            SumOptToRealPath(TrialTypeKE,Cues,3)=SumOptToRealPath(TrialTypeKE,Cues,3)+(1/ToOptimalLength);  
+        end
+        
         clear Angle; %if subject hadn't point to target in the next trial
     end
 end
 
 % udelam obrazek dodatecne
-Obrazky(FIGUREDATA,PlotsInFigure,FileName,SubPlots,OrderTrials);
+Obrazky(FIGUREDATA,PlotsInFigure,FileName,SubPlots,OrderTrials,TrajectoriesToShow);
 
 %KAMIL 22.5.2025 - tady jsou asi chyby
 
 %summary analysis in output table
 %SearchNum is now total number of trials
-out{2+SearchNum+3,2}='landmarks';
-out{2+SearchNum+3,3}='difficulty level';  %trialtype 1-3
-% out{2+SearchNum+3,2}='description'; 
-out{2+SearchNum+3,4}='N of trained pairs in sequence'; 
-out{2+SearchNum+3,5}='N of turns in sequence';
-out{2+SearchNum+3,6}='N'; %
-out{2+SearchNum+3,7}='prop. aim found';%
-out{2+SearchNum+3,8}='mean N errors';% 'Angle Error';
-out{2+SearchNum+3,9}='mean path deviation';
-out{2+SearchNum+3,10}='mean ABS angle error';
-out{2+SearchNum+3,11}='mean path efficiency'; %kamil 19.4.2024
+for z = 1:3 %third dimension -  all trials, first trials, last trials  
+    if z==1 
+        r = 3; %output table row
+        out{2+SearchNum+r,1}='Analysis of all trials';
+    elseif z==2
+        r = r+2;
+        out{2+SearchNum+r,1}='Analysis of trials 1-12';        
+    else
+        r = r+2;
+        out{2+SearchNum+r,1}='Analysis of trials 19-30';
+    end
+    out{2+SearchNum+r,2}='landmarks';
+    out{2+SearchNum+r,3}='difficulty level';  %trialtype 1-3
+    % out{2+SearchNum+3,2}='description'; 
+    out{2+SearchNum+r,4}='N of trained pairs in sequence'; 
+    out{2+SearchNum+r,5}='N of turns in sequence';
+    out{2+SearchNum+r,6}='N'; %
+    out{2+SearchNum+r,7}='prop. aim found';%
+    out{2+SearchNum+r,8}='mean N errors';% 'Angle Error';
+    out{2+SearchNum+r,9}='mean path deviation';
+    out{2+SearchNum+r,10}='mean ABS angle error';
+    out{2+SearchNum+r,11}='mean path efficiency'; %kamil 19.4.2024
+    r = r + 1; %4,15,26
+    out{2+SearchNum+r,2}='north only'; %'landmarks'
+    out{2+SearchNum+r,3}='1'; %'difficulty level' %trialtype 1-3
+    out{2+SearchNum+r,4}='1';  %'N of trained pairs in sequence'; 
+    out{2+SearchNum+r,5}='0'; %'N of turns in sequence';
+    out{2+SearchNum+r,6}=NumTr(1,1,z); %'N' (TrialTypeKE,Cues)
+    out{2+SearchNum+r,7}=NumAimFound(1,1,z)/NumTr(1,1,z); %'prop. aim found'
+    out{2+SearchNum+r,8}=TotNumErr(1,1,z)/NumTr(1,1,z); %'mean N errors'
+    out{2+SearchNum+r,9}=SumPathDev(1,1,z)/NumTr(1,1,z);  %'mean path deviation';
+    out{2+SearchNum+r,10}=SumAbsAngErr(1,1,z)/NumTr(1,1,z); %'mean ABS angle error'
+    out{2+SearchNum+r,11}=SumOptToRealPath(1,1,z)/NumTr(1,1,z);  %'mean path efficiency'; %kamil 19.4.2024
+    r = r + 1;
+    out{2+SearchNum+r,2}='north only';
+    out{2+SearchNum+r,3}='2';
+    out{2+SearchNum+r,4}='2'; 
+    out{2+SearchNum+r,5}='0';
+    out{2+SearchNum+r,6}=NumTr(2,1,z);
+    out{2+SearchNum+r,7}=NumAimFound(2,1,z)/NumTr(2,1,z);
+    out{2+SearchNum+r,8}=TotNumErr(2,1,z)/NumTr(2,1,z);
+    out{2+SearchNum+r,9}=SumPathDev(2,1,z)/NumTr(2,1,z);
+    out{2+SearchNum+r,10}=SumAbsAngErr(2,1,z)/NumTr(2,1,z);
+    out{2+SearchNum+r,11}=SumOptToRealPath(2,1,z)/NumTr(2,1,z);
+    r = r + 1;    
+    out{2+SearchNum+r,2}='north only';
+    out{2+SearchNum+r,3}='3';
+    out{2+SearchNum+r,4}='>2'; 
+    out{2+SearchNum+r,5}='>0';
+    out{2+SearchNum+r,6}=NumTr(3,1,z);
+    out{2+SearchNum+r,7}=NumAimFound(3,1,z)/NumTr(3,1,z);
+    out{2+SearchNum+r,8}=TotNumErr(3,1,z)/NumTr(3,1,z);
+    out{2+SearchNum+r,9}=SumPathDev(3,1,z)/NumTr(3,1,z);
+    out{2+SearchNum+r,10}=SumAbsAngErr(3,1,z)/NumTr(3,1,z);
+    out{2+SearchNum+r,11}=SumOptToRealPath(3,1,z)/NumTr(3,1,z);
+    r = r + 1;
+    out{2+SearchNum+r,2}='statues only';
+    out{2+SearchNum+r,3}='1';
+    out{2+SearchNum+r,4}='1'; 
+    out{2+SearchNum+r,5}='0';
+    out{2+SearchNum+r,6}=NumTr(1,2,z);
+    out{2+SearchNum+r,7}=NumAimFound(1,2,z)/NumTr(1,2,z);
+    out{2+SearchNum+r,8}=TotNumErr(1,2,z)/NumTr(1,2,z);
+    out{2+SearchNum+r,9}=SumPathDev(1,2,z)/NumTr(1,2,z);
+    out{2+SearchNum+r,10}=SumAbsAngErr(1,2,z)/NumTr(1,2,z);
+    out{2+SearchNum+r,11}=SumOptToRealPath(1,2,z)/NumTr(1,2,z);
+    r = r + 1;
+    out{2+SearchNum+r,2}='statues only';
+    out{2+SearchNum+r,3}='2';
+    out{2+SearchNum+r,4}='2'; 
+    out{2+SearchNum+r,5}='0';
+    out{2+SearchNum+r,6}=NumTr(2,2,z);
+    out{2+SearchNum+r,7}=NumAimFound(2,2,z)/NumTr(2,2,z);
+    out{2+SearchNum+r,8}=TotNumErr(2,2,z)/NumTr(2,2,z);
+    out{2+SearchNum+r,9}=SumPathDev(2,2,z)/NumTr(2,2,z);
+    out{2+SearchNum+r,10}=SumAbsAngErr(2,2,z)/NumTr(2,2,z);
+    out{2+SearchNum+r,11}=SumOptToRealPath(2,2,z)/NumTr(2,2,z);
+    r = r + 1;
+    out{2+SearchNum+r,2}='statues only';
+    out{2+SearchNum+r,3}='3';
+    out{2+SearchNum+r,4}='>2'; 
+    out{2+SearchNum+r,5}='>0';
+    out{2+SearchNum+r,6}=NumTr(3,2,z);
+    out{2+SearchNum+r,7}=NumAimFound(3,2,z)/NumTr(3,2,z);
+    out{2+SearchNum+r,8}=TotNumErr(3,2,z)/NumTr(3,2,z);
+    out{2+SearchNum+r,9}=SumPathDev(3,2,z)/NumTr(3,2,z);
+    out{2+SearchNum+r,10}=SumAbsAngErr(3,2,z)/NumTr(3,2,z);
+    out{2+SearchNum+r,11}=SumOptToRealPath(3,2,z)/NumTr(3,2,z);
+    r = r + 1; %10,21,32
+    %***beg %% 27 Dec 2024
+    out{2+SearchNum+r,2}='north and statues';
+    out{2+SearchNum+r,3}='1';
+    out{2+SearchNum+r,4}='1'; 
+    out{2+SearchNum+r,5}='0';
+    out{2+SearchNum+r,6}=NumTr(1,3,z);
+    out{2+SearchNum+r,7}=NumAimFound(1,3,z)/NumTr(1,3,z);
+    out{2+SearchNum+r,8}=TotNumErr(1,3,z)/NumTr(1,3,z);
+    out{2+SearchNum+r,9}=SumPathDev(1,3,z)/NumTr(1,3,z);
+    out{2+SearchNum+r,10}=SumAbsAngErr(1,3,z)/NumTr(1,3,z);
+    out{2+SearchNum+r,11}=SumOptToRealPath(1,3,z)/NumTr(1,3,z);
+    r = r + 1;
+    out{2+SearchNum+r,2}='north and statues';
+    out{2+SearchNum+r,3}='2';
+    out{2+SearchNum+r,4}='2'; 
+    out{2+SearchNum+r,5}='0';
+    out{2+SearchNum+r,6}=NumTr(2,3,z);
+    out{2+SearchNum+r,7}=NumAimFound(2,3,z)/NumTr(2,3,z);
+    out{2+SearchNum+r,8}=TotNumErr(2,3,z)/NumTr(2,3,z);
+    out{2+SearchNum+r,9}=SumPathDev(2,3,z)/NumTr(2,3,z);
+    out{2+SearchNum+r,10}=SumAbsAngErr(2,3,z)/NumTr(2,3,z);
+    out{2+SearchNum+r,11}=SumOptToRealPath(2,3,z)/NumTr(2,3,z);
+    r = r + 1; %12,23,34
+    out{2+SearchNum+r,2}='north and statues';
+    out{2+SearchNum+r,3}='3';
+    out{2+SearchNum+r,4}='>2'; 
+    out{2+SearchNum+r,5}='>0';
+    out{2+SearchNum+r,6}=NumTr(3,3,z);
+    out{2+SearchNum+r,7}=NumAimFound(3,3,z)/NumTr(3,3,z);
+    out{2+SearchNum+r,8}=TotNumErr(3,3,z)/NumTr(3,3,z);
+    out{2+SearchNum+r,9}=SumPathDev(3,3,z)/NumTr(3,3,z);
+    out{2+SearchNum+r,10}=SumAbsAngErr(3,3,z)/NumTr(3,3,z);
+    out{2+SearchNum+r,11}=SumOptToRealPath(3,3,z)/NumTr(3,3,z);
+    %***end %% 27 Dec 2024
 
-out{2+SearchNum+4,2}='north only'; %'landmarks'
-out{2+SearchNum+4,3}='1'; %'difficulty level' %trialtype 1-3
-out{2+SearchNum+4,4}='1';  %'N of trained pairs in sequence'; 
-out{2+SearchNum+4,5}='0'; %'N of turns in sequence';
-out{2+SearchNum+4,6}=NumTr(1,1); %'N' (TrialTypeKE,Cues)
-out{2+SearchNum+4,7}=NumAimFound(1,1)/NumTr(1,1); %'prop. aim found'
-out{2+SearchNum+4,8}=TotNumErr(1,1)/NumTr(1,1); %'mean N errors'
-out{2+SearchNum+4,9}=SumPathDev(1,1)/NumTr(1,1);  %'mean path deviation';
-out{2+SearchNum+4,10}=SumAbsAngErr(1,1)/NumTr(1,1); %'mean ABS angle error'
-out{2+SearchNum+4,11}=SumOptToRealPath(1,1)/NumTr(1,1);  %'mean path efficiency'; %kamil 19.4.2024
+end
 
-out{2+SearchNum+5,2}='north only';
-out{2+SearchNum+5,3}='2';
-out{2+SearchNum+5,4}='2'; 
-out{2+SearchNum+5,5}='0';
-out{2+SearchNum+5,6}=NumTr(2,1);
-out{2+SearchNum+5,7}=NumAimFound(2,1)/NumTr(2,1);
-out{2+SearchNum+5,8}=TotNumErr(2,1)/NumTr(2,1);
-out{2+SearchNum+5,9}=SumPathDev(2,1)/NumTr(2,1);
-out{2+SearchNum+5,10}=SumAbsAngErr(2,1)/NumTr(2,1);
-out{2+SearchNum+5,11}=SumOptToRealPath(2,1)/NumTr(2,1);
-
-out{2+SearchNum+6,2}='north only';
-out{2+SearchNum+6,3}='3';
-out{2+SearchNum+6,4}='>2'; 
-out{2+SearchNum+6,5}='>0';
-out{2+SearchNum+6,6}=NumTr(3,1);
-out{2+SearchNum+6,7}=NumAimFound(3,1)/NumTr(3,1);
-out{2+SearchNum+6,8}=TotNumErr(3,1)/NumTr(3,1);
-out{2+SearchNum+6,9}=SumPathDev(3,1)/NumTr(3,1);
-out{2+SearchNum+6,10}=SumAbsAngErr(3,1)/NumTr(3,1);
-out{2+SearchNum+6,11}=SumOptToRealPath(3,1)/NumTr(3,1);
-
-out{2+SearchNum+7,2}='statues only';
-out{2+SearchNum+7,3}='1';
-out{2+SearchNum+7,4}='1'; 
-out{2+SearchNum+7,5}='0';
-out{2+SearchNum+7,6}=NumTr(1,2);
-out{2+SearchNum+7,7}=NumAimFound(1,2)/NumTr(1,2);
-out{2+SearchNum+7,8}=TotNumErr(1,2)/NumTr(1,2);
-out{2+SearchNum+7,9}=SumPathDev(1,2)/NumTr(1,2);
-out{2+SearchNum+7,10}=SumAbsAngErr(1,2)/NumTr(1,2);
-out{2+SearchNum+7,11}=SumOptToRealPath(1,2)/NumTr(1,2);
-
-out{2+SearchNum+8,2}='statues only';
-out{2+SearchNum+8,3}='2';
-out{2+SearchNum+8,4}='2'; 
-out{2+SearchNum+8,5}='0';
-out{2+SearchNum+8,6}=NumTr(2,2);
-out{2+SearchNum+8,7}=NumAimFound(2,2)/NumTr(2,2);
-out{2+SearchNum+8,8}=TotNumErr(2,2)/NumTr(2,2);
-out{2+SearchNum+8,9}=SumPathDev(2,2)/NumTr(2,2);
-out{2+SearchNum+8,10}=SumAbsAngErr(2,2)/NumTr(2,2);
-out{2+SearchNum+8,11}=SumOptToRealPath(2,2)/NumTr(2,2);
-
-out{2+SearchNum+9,2}='statues only';
-out{2+SearchNum+9,3}='3';
-out{2+SearchNum+9,4}='>2'; 
-out{2+SearchNum+9,5}='>0';
-out{2+SearchNum+9,6}=NumTr(3,2);
-out{2+SearchNum+9,7}=NumAimFound(3,2)/NumTr(3,2);
-out{2+SearchNum+9,8}=TotNumErr(3,2)/NumTr(3,2);
-out{2+SearchNum+9,9}=SumPathDev(3,2)/NumTr(3,2);
-out{2+SearchNum+9,10}=SumAbsAngErr(3,2)/NumTr(3,2);
-out{2+SearchNum+9,11}=SumOptToRealPath(3,2)/NumTr(3,2);
-
-%memory for trained pairs (trial category 1) beginning
-% NumTrainedPairsTests=0; NumAimFound=0; ErrTrainedPairsTests=0; PathDevTrainedPairsTests=0; AngleErrTrainedPairsTests=0;
-% 
-% for i=1:SearchNum
-%    if out{2+i,17}==1;  
-%        NumTrainedPairsTests=NumTrainedPairsTests+1;
-%        NumAimFound=NumAimFound+out{2+i,4};
-%        ErrTrainedPairsTests=ErrTrainedPairsTests+out{2+i,8};
-%        PathDevTrainedPairsTests=PathDevTrainedPairsTests+out{2+i,7};
-%        AngleErrTrainedPairsTests=AngleErrTrainedPairsTests+abs(out{2+i,16});
-%    end
-% end
-% 
-% out{2+SearchNum+4,1}='1';
-% out{2+SearchNum+4,2}='memory for trained pairs';
-% out{2+SearchNum+4,3}='1';
-% out{2+SearchNum+4,4}='0';
-% out{2+SearchNum+4,5}=NumTrainedPairsTests;
-% out{2+SearchNum+4,6}=NumAimFound/NumTrainedPairsTests;
-% out{2+SearchNum+4,7}=ErrTrainedPairsTests/NumTrainedPairsTests;
-% out{2+SearchNum+4,8}=PathDevTrainedPairsTests/NumTrainedPairsTests;
-% out{2+SearchNum+4,9}=AngleErrTrainedPairsTests/NumTrainedPairsTests;
-
-%memory for trained pairs end
-
-% out{2+SearchNum+4,1}=1;
-% out{2+SearchNum+4,2}='trained pair';
-% out{2+SearchNum+4,3}=1;
-% out{2+SearchNum+4,4}=0;
-% 
-% out{2+SearchNum+5,1}=2;
-% out{2+SearchNum+5,2}='sequence of two trained pairs, straight';
-% out{2+SearchNum+5,3}=2;
-% out{2+SearchNum+5,4}=0;
-% 
-% out{2+SearchNum+6,1}=3;
-% out{2+SearchNum+6,2}='sequence of two trained pairs, with a turn';
-% out{2+SearchNum+6,3}=2;
-% out{2+SearchNum+6,4}=1;
-% 
-% out{2+SearchNum+7,1}=4;
-% out{2+SearchNum+7,2}='sequence of three trained pairs, with one turn';
-% out{2+SearchNum+7,3}=3;
-% out{2+SearchNum+7,4}=1;
-% 
-% out{2+SearchNum+8,1}=5;
-% out{2+SearchNum+8,2}='sequence of three trained pairs, with two turns';
-% out{2+SearchNum+8,3}=3;
-% out{2+SearchNum+8,4}=2;
-% 
-% out{2+SearchNum+9,1}=6;
-% out{2+SearchNum+9,2}='sequence of four trained pairs, (always with two turns)';
-% out{2+SearchNum+9,3}=4;
-% out{2+SearchNum+9,4}=2;
-% 
-% out{2+SearchNum+10,1}=7;
-% out{2+SearchNum+10,2}='sequence of five trained pairs, with two turns';
-% out{2+SearchNum+10,3}=5;
-% out{2+SearchNum+10,4}=2;
-% 
-% out{2+SearchNum+11,1}=8;
-% out{2+SearchNum+11,2}='sequence of five trained pairs, with three turns';
-% out{2+SearchNum+11,3}=5;
-% out{2+SearchNum+11,4}=3;
-% 
-% out{2+SearchNum+12,1}=9;
-% out{2+SearchNum+12,2}='sequence of six trained pairs, with three turns';
-% out{2+SearchNum+12,3}=6;
-% out{2+SearchNum+12,4}=3;
-% 
-% out{2+SearchNum+13,1}=10;
-% out{2+SearchNum+13,2}='sequence of six trained pairs, with four turns';
-% out{2+SearchNum+13,3}=6;
-% out{2+SearchNum+13,4}=4;
-% 
-% out{2+SearchNum+14,1}=11;
-% out{2+SearchNum+14,2}='sequence of seven trained pairs, (always with four turns)';
-% out{2+SearchNum+14,3}=7;
-% out{2+SearchNum+14,4}=4;
-% 
-% out{2+SearchNum+15,1}=12;
-% out{2+SearchNum+15,2}='sequence of eight trained pairs, (always with four turns)';
-% out{2+SearchNum+15,3}=8;
-% out{2+SearchNum+15,4}=4;
- 
-
+r = r + 2;
 %LastMeasuresForAim kamil 7.6.2024 - hodnoty z posledniho hledani cile 1-9
-row = 13+SearchNum; %should start at row 44
+row = 2+SearchNum+r; %should start at row 44
 out{row,1} = 'LastMeasuresForAim';
 [out{row+1, 1:5}] = deal('Last goal search for each field','GoalField', 'duration', 'path efficiency', 'angle error');
 for j=1:9
 	[out{row+j+1,2:5}]=deal(j,LastMeasuresForAim(j,1), LastMeasuresForAim(j,2), LastMeasuresForAim(j,3));
 end
 
-xlswrite([FileNameIn '.xls'], out);
+xlswrite([FullFileName '.xls'], out); %write output table to xls file in the same folder as source data
 
 end
 
-%TODO tohle jsem jeste nevyzkousel
-function Obrazky(FD,PlotsInFigure,FileName,SubPlots,OrderTrials)
+%plot function 
+function Obrazky(FD,PlotsInFigure,FileName,SubPlots,OrderTrials,TrajectoriesToShow)
     % arguments:
     % FD - all plot values
     % FileName
@@ -518,6 +477,9 @@ function Obrazky(FD,PlotsInFigure,FileName,SubPlots,OrderTrials)
     % AimFound - if the aim was found in tre trial
     % Cil - goal name, e.g. KOLIBRIKA
     % ToOptimalLength - number 1 - inf, to longer the worse
+    if ~isempty(TrajectoriesToShow)
+        FD = FD(TrajectoriesToShow);
+    end
     Kategorie = unique([FD.TrialTypeKE]);  % trials categories 1-3
     for kat = 1:numel(Kategorie)
         tt = find(ismember([FD.TrialTypeKE] ,Kategorie(kat)) ); %indexes of this category in  FD
@@ -551,13 +513,13 @@ function Obrazky(FD,PlotsInFigure,FileName,SubPlots,OrderTrials)
             AimFound = FD(m).AimFound;
             Cil = FD(m).Cil;
             Cues = FD(m).Cues; %Cues: 1 = North shown, 2 = Statues shown
-            
+            if Cues == 1, CuesStr = 'North'; elseif Cues == 2, CuesStr = 'Statues'; elseif Cues == 3, CuesStr = 'N+S'; else CuesStr=''; end
             
             if SubPlots == 1 && rem(n,PlotsInFigure)==1 %if we plot subplots for individual tracks and this is the first track/subplots in this figure
-				figurename = [ FileName ' - TT ' num2str(Kategorie(kat)) ' - Plot ' num2str(ceil(n/PlotsInFigure))];
+				figurename = [ FileName ' - Level ' num2str(Kategorie(kat)) ' - Plot ' num2str(ceil(n/PlotsInFigure))];
                 figure('Name',figurename,'position', [50, 50, 900, 700]);
             elseif SubPlots == 0 && n==1 %if we do not plot subplots and this is the first track
-                figurename = [ FileName ' - TT ' num2str(Kategorie(kat)) ]; %nastartuju obrazek                
+                figurename = [ FileName ' - Level ' num2str(Kategorie(kat)) ]; %nastartuju obrazek                
                 figure('Name',figurename,'position', [50, 50, 900, 700]);
             end
 			
@@ -593,10 +555,10 @@ function Obrazky(FD,PlotsInFigure,FileName,SubPlots,OrderTrials)
                 %title(['Search# ' num2str(SearchNum) '   ' CurrentAim '-' Cil '   duration: ' num2str(Duration) '   length: ' num2str(Length) '   Errors: ' num2str(NumErr)])
                 if SubPlots 
                     % trial number , found 1/0, errors ; goal name (e.g. PRASE)
-                    title({[ '#' num2str(SearchNum) ' f' num2str(AimFound) ' e' num2str(NumErr) ' l' num2str(Cues)], Cil}) %  ' T' num2str(TrialType(1))
+                    title({[ '#' num2str(SearchNum) ' f' num2str(AimFound) ' e' num2str(NumErr) ' l:' CuesStr], Cil}) %  ' T' num2str(TrialType(1))
                 else 
                     % cateogory (i.e. difficulty level) , found / trials, errors
-                    title([  'Type ' num2str(kat) ' f' num2str(sum([FD(tt).AimFound])) '/' num2str(numel(tt)) ' e' num2str(sum([FD(tt).NumErr])) ] ) %  kat found/celkem
+                    title([  'Level ' num2str(kat) ' f' num2str(sum([FD(tt).AimFound])) '/' num2str(numel(tt)) ' e' num2str(sum([FD(tt).NumErr])) ] ) %  kat found/celkem
                 end
             end
 
@@ -607,8 +569,9 @@ function Obrazky(FD,PlotsInFigure,FileName,SubPlots,OrderTrials)
             if SubPlots == 0 % tracks numbers if plotting all tracks into one plot
                 textoffset = 150;
                 OF = [1 1; -1 -1; 1 -1; -1 1; 0 1; 1 0; 0 -1; -1 0; .5 .5; -.5 -.5; .5 -.5; -.5 .5]; %distribution of trial number around - each line is [x,y] offset for a trial
-                text(ArenaLocX(2)+textoffset*OF(n,1),0-ArenaLocY(2)+textoffset*OF(n,2),num2str(n),'Color',c, 'FontSize',14); %number near start
-                text(AimX(CurBox)+textoffset*OF(n,1),0-AimY(CurBox)+textoffset*OF(n,2),num2str(n),'Color',c,'FontSize',14); %number near goal                
+                OF = repmat(OF,4,1); %we need enoug rows for all possible training trials
+                text(ArenaLocX(2)+textoffset*OF(n,1),0-ArenaLocY(2)+textoffset*OF(n,2),num2str(FD(m).Trial),'Color',c, 'FontSize',14); %number near start
+                text(AimX(CurBox)+textoffset*OF(n,1),0-AimY(CurBox)+textoffset*OF(n,2),num2str(FD(m).Trial),'Color',c,'FontSize',14); %number near goal                
             end
             
             for i=1:NumErr    %for all errors                        
