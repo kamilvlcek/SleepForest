@@ -1,34 +1,38 @@
-function out=ReadTR(FileName, PlotSingleTrials,Colors)
+function out=ReadTR(FileNameIn, PlotSingleTrials,Colors)
 %vytvori data pro Learning Curve
 %ReadTR compute proportion of real path length to optimal one
 % categorize tasks according to the demands/difficulty level
 % Eduard Kelemen (c) 3/2017
 
 if ~exist('PlotSingleTrials','var')
-    PlotSingleTrials = 0; %defaulne chci vykrestli obrazek vsech trialu najednou
+    PlotSingleTrials = 0; %By default, I want to print all three trials at once.
 end %1 znamena subplot, 2 znamena opravdu sinle trials
-if ~exist('Colors','var') %pocet trialu, tedy pocet ruznych barev 
-    Colors = 150; %jist ale moc vysoka hodnota na pocet trialu   
+if ~exist('Colors','var') %number of trials, i.e. number of different colors
+    Colors = 50; %Certain, but too high a value for the number of trials 
 end
 ColorSet = distinguishable_colors(Colors); %ruzne barvy do grafu
 
-out{1,1}=FileName;
+if contains(FileNameIn,'\')
+    FullFileName = FileNameIn;  % complete trajectory with parh
+else
+    FullFileName=['d:\prace\mff\data\aappSeg\NUDZ\results\spanav\' FileNameIn ];
+end
+%FileName=['D:\Users\kelemen\Data\VRKamil\' FileNameIn '.tr'];
+FileNameShort = basename(FullFileName); %without path, only filename
+
+out{1,1}=FileNameShort;
 out{2,1}='num';
 out{2,2}='aim';
 out{2,3}='animal';
 out{2,4}='duration';
 out{2,5}='path deviation'; %length / optimal length
 out{2,6}='errors';
-out{2,7}='squairepair'; %jmeno aktualni dvojice ctvercu
-out{2,8}='squairepairno'; %cislo dvojice ctvercu v poradi
-out{2,9}='errorsTR'; %pocet chyb podle TR souboru
+out{2,7}='squairepair'; %name of the current pair of squares
+out{2,8}='squairepairno'; %number of pairs of squares in sequence
+out{2,9}='errorsTR'; %number of errors according to TR file
 
 
-FileNameShort = FileName; %uschovam na pozdeji
-FileName=['d:\prace\mff\data\aappSeg\skriptyForest\output\' FileName ];
-
-
-FileID=fopen(FileName);
+FileID=fopen(FullFileName);
 
 SearchNum=0;
 NL=0;line=[]; %line number
@@ -37,36 +41,37 @@ while isempty(strfind(line, 'JavaTime')); %musi tam byt neco pred zacatkem prvni
     line=fgetl(FileID);
     NL=NL+1;
     if strfind(line, 'Aim position')
-        Aim=GetAimPositions(line);
+        Aim=GetAimPositionsb(line);
         AimX=Aim{1}; %double 9x6 + ctverce x stany
         AimY=Aim{2};
     end
 end
-n=strfind(line, 'text:Najdi');
+n=strfind(line, 'ext:Najdete');
 Cil=line(n+11:end-2);
 DLN=0; %data line number - one trial only
 firstdataline=0;
 NumErr=0;
-FigureStarted = false; %jestli uz bylo nakreslene zakladni schema obrazku
+FigureStarted = false; %if the basic outline of the image has already been drawn
 fprintf('SquarePairs: ');
 SquarePaire = ''; %defaultni hodnota
 SquarePaireNo = 0;
 ErrorsTR = 0;
 ErrorsTRLast = 0; %defaultni hodnota
+stav=0; %state - 0=exploration, 1-pointing , 2- navigation
 while feof(FileID)==0
 %while isempty(strfind(line, 'text:VYBORNE !'));
 
     line=fgetl(FileID);
     NL=NL+1;
-    if strcmp(line(1),' ') %radky s ciselnymi daty - zacinaji mezerou
+    if strcmp(line(1),' ') %Lines with numerical data begin with a space.
         DLN=DLN+1; %radky data pro tento trial
         if firstdataline==0
             divider=line(7);
             firstdataline=1;
         end
-        k=strfind(line, divider); %hranice sloupcu
+        k=strfind(line, divider); %column borders
         time(DLN)=str2num(line(2:k(1)-1)); %#ok<*ST2NM>
-        ArenaLocX(DLN)=str2num(line(k(2)+1:k(3)-1)); %pozice hrace na arene v tomto casovem okamziku
+        ArenaLocX(DLN)=str2num(line(k(2)+1:k(3)-1)); %player position at this moment in time
         ArenaLocY(DLN)=str2num(line(k(3)+1:k(4)-1));
     end   
     if strfind(line, 'Aim search') %trial start
@@ -76,13 +81,19 @@ while feof(FileID)==0
         DLN=0; 
         NumErr=0; %pocet chyb v trialu
         ErrBox=[];
-        ErrGoal=[];
     end
-    if strfind(line, 'text:Najdi')
+    if strfind(line,'Ukazte na')  
+        stav=1; %state - 1-pointing , 2- navigation
+    end       
+    if strfind(line, 'text:Najdete')
+        stav=2;
         n=strfind(line, 'text:Najdi');
-        Cil=line(n+11:end-2); %jmeno zvirete, napriklad KOCKU
+        Cil=line(n+11:end-2); %animal name, e.g. KOCKU
     end 
-    if strfind(line,'Square Pair')
+    if strfind(line, 'text:Prozkoumej')
+        stav=0;
+    end    
+    if contains(line,'Square Pair') && stav ==1
         n=strfind(line, 'Square Pair:');
         SquarePaire = line(n+13 : n+14);
         fprintf('%s ',SquarePaire);
@@ -124,7 +135,7 @@ while feof(FileID)==0
         if strcmp(ErrAim(4),'I')
             ErrBox(NumErr)=9;
         end        
-        ErrGoal(NumErr)=str2num(ErrAim(5)); %cislo stanu ve ctverci
+        %ErrGoal(NumErr)=str2num(ErrAim(5)); %cislo stanu ve ctverci
     end
     if strfind(line, 'Aim entrance:') %vstup do spravneho stanu = konec jednoho trialu
         SearchNum=SearchNum+1; %cislo cile
@@ -157,7 +168,7 @@ while feof(FileID)==0
         if strcmp(CurrentAim(4),'I')
             CurBox=9;
         end        
-        CurGoal=str2num(CurrentAim(5));
+        %CurGoal=str2num(CurrentAim(5));
         % ---------- ZACINAM KRESLIT OBRAZEK ---------------     
         if ~FigureStarted || PlotSingleTrials > 0
             if PlotSingleTrials == 2
@@ -181,15 +192,15 @@ while feof(FileID)==0
                FigureStarted = true;              
             end
             % pozice ctvercu
-            X1=mean(AimX(1,:));Y1=mean(AimY(1,:));
-            X2=mean(AimX(2,:));Y2=mean(AimY(2,:));
-            X3=mean(AimX(3,:));Y3=mean(AimY(3,:));
-            X4=mean(AimX(4,:));Y4=mean(AimY(4,:));
-            X5=mean(AimX(5,:));Y5=mean(AimY(5,:));
-            X6=mean(AimX(6,:));Y6=mean(AimY(6,:));        
-            X7=mean(AimX(7,:));Y7=mean(AimY(7,:));
-            X8=mean(AimX(8,:));Y8=mean(AimY(8,:));
-            X9=mean(AimX(9,:));Y9=mean(AimY(9,:));        
+            X1=mean(AimX(1));Y1=mean(AimY(1));
+            X2=mean(AimX(2));Y2=mean(AimY(2));
+            X3=mean(AimX(3));Y3=mean(AimY(3));
+            X4=mean(AimX(4));Y4=mean(AimY(4));
+            X5=mean(AimX(5));Y5=mean(AimY(5));
+            X6=mean(AimX(6));Y6=mean(AimY(6));        
+            X7=mean(AimX(7));Y7=mean(AimY(7));
+            X8=mean(AimX(8));Y8=mean(AimY(8));
+            X9=mean(AimX(9));Y9=mean(AimY(9));        
             %tady se kresli sekvence uceni - asi fixni pevne dana
             plot([X1+500 X2-500],[0-Y1 0-Y2],'k')
             hold on
@@ -203,10 +214,7 @@ while feof(FileID)==0
 
             %tohle jsou pozice vsech stanu
             for box=1:9
-              for i=1:6
-                 
-                 plot(AimX(box,i),0-AimY(box,i), 'ok')
-              end
+                 plot(AimX(box),0-AimY(box), 'ok')
             end
             plot([-1700 3700 3700 -1700 -1700],0-[-1700 -1700 3700 3700 -1700], 'k') %nejake ohraniceni
             axis equal
@@ -216,18 +224,18 @@ while feof(FileID)==0
         end        
         
         for i=1:NumErr            
-             plot(AimX(ErrBox(i),ErrGoal(i)),0-AimY(ErrBox(i),ErrGoal(i)), 'or') %cervenou barvou chybne nalezene cile
+             plot(AimX(ErrBox(i)),0-AimY(ErrBox(i)), 'or') %cervenou barvou chybne nalezene cile
         end    
         if PlotSingleTrials == 0
              c = ColorSet(SearchNum,:);
         end
         plot(ArenaLocX(2:end),0-ArenaLocY(2:end),'Color',c) %tohle je jedna trasa v trialu
         plot(ArenaLocX(1),0-ArenaLocY(1),'*','Color',c) %startovni misto
-        plot(AimX(CurBox,CurGoal),0-AimY(CurBox,CurGoal), 'og', 'MarkerSize',10) %zelenou barvou aktualni cil - nakonec, aby byl zeleny cil na povrchu
+        plot(AimX(CurBox),0-AimY(CurBox), 'og', 'MarkerSize',10) %zelenou barvou aktualni cil - nakonec, aby byl zeleny cil na povrchu
         
         Duration=time(end)-time(2); %cas  nalezeni cile
         Length=LengthofTrack(ArenaLocX(2:end),ArenaLocY(2:end)); %delka cesty do cile
-        OptimalLenght =dist(ArenaLocX(2),ArenaLocY(2),AimX(CurBox,CurGoal),AimY(CurBox,CurGoal)); %nejkratsi cesta do cile
+        OptimalLenght =dist(ArenaLocX(2),ArenaLocY(2),AimX(CurBox),AimY(CurBox)); %nejkratsi cesta do cile
         if PlotSingleTrials == 2
             title(['Search# ' num2str(SearchNum) '   ' CurrentAim '-' Cil '   duration: ' num2str(Duration) '   length: ' num2str(Length) '   Errors: ' num2str(NumErr)])
         elseif PlotSingleTrials == 1
@@ -249,40 +257,3 @@ end
 fprintf(' ...  finished with %i trials\n',SearchNum);
 
 
-
-
-%RatFile = ['C:\Users\kelemen\DATA\robotavoidance\' RatFileName '.dat'];
-% RatFileID=fopen(RatFile);
-% 
-% %%%
-% line=[];NHL=0;
-% while strcmp(line,'%%END_HEADER')==0
-%     NHL=NHL+1;
-%     line=fgetl(RatFileID);
-%     k=strfind(line, ' %RobotZone');
-%     if ~isempty(k)
-%         ShSecPos=ShockSecPos(line(k+12:end));
-%     end
-% end
-% if ShSecPos(4)==0
-%     ShockZoneLoc='F';
-% end
-% if ShSecPos(4)==90
-%     ShockZoneLoc='R';
-% end
-% if ShSecPos(4)==180
-%     ShockZoneLoc='B';
-% end
-% if ShSecPos(4)==270
-%     ShockZoneLoc='L';
-% end
-% %%%
-% 
-% 
-% RatData = textscan(RatFileID, '%d %d %f %f %f %d %d %d');
-% 
-% 
-% timeMs=RatData{2};
-% RatX=RatData{3};
-% RatY=RatData{4};
-% RatA=RatData{6};
