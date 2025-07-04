@@ -1,4 +1,4 @@
-function out=ReadTR3(FileNameIn,SubPlots,OrderTrials, TrajectoriesToShow)
+function out=ReadTR3(FileNameIn,SubPlots,OrderTrials, TrajectoriesToShow, DoPlot, Write2xls)
 %process the test data, plot the graph and return the result table
 %analysis of training and test trials - March 11, 2024
 %compute proportion of real path length to optimal one
@@ -17,6 +17,14 @@ if ~exist('OrderTrials','var') || isempty(OrderTrials)
 end
 
 if ~exist('TrajectoriesToShow','var'), TrajectoriesToShow=[]; end
+%%% Sofia 02.07.2025 %%%
+if ~exist('DoPlot','var')
+    DoPlot = 1; % By default, generate plots
+end
+if ~exist('Write2xls','var')
+    Write2xls = 1; % By default, generate xls file
+end
+
 
 %values for categoris 3 difficulty levels x 3 (North/Statues/both shown, across all trials) x 3  (all trials, first part , last part)
 NumTr(3,3,3)=zeros; %num of trials (TrialTypeKE,Cues) 
@@ -256,7 +264,7 @@ while feof(FileID)==0
         FIGUREDATA(SearchNum).Cil = Cil; %goal name, e.g. KOLIBRIKA
         FIGUREDATA(SearchNum).ToOptimalLength = ToOptimalLength;  % number 1 - inf, to longer the worse
         FIGUREDATA(SearchNum).Cues = Cues;  % Cues: 1 = North shown, 2 = Statues shown
-        
+       
         %one trial in output table
         out{2+SearchNum,1}=SearchNum; %SearchNum is trial number
         out{2+SearchNum,2}=CurrentAim; %e.g. AimA
@@ -312,8 +320,10 @@ while feof(FileID)==0
 end
 
 % udelam obrazek dodatecne
-Obrazky(FIGUREDATA,PlotsInFigure,FileName,SubPlots,OrderTrials,TrajectoriesToShow);
-
+%%% Sofia 02.07.2025 %%%
+if DoPlot
+    Obrazky(FIGUREDATA,PlotsInFigure,FileName,SubPlots,OrderTrials,TrajectoriesToShow);
+end
 %KAMIL 22.5.2025 - tady jsou asi chyby
 
 %summary analysis in output table
@@ -452,9 +462,10 @@ out{row,1} = 'LastMeasuresForAim';
 for j=1:9
 	[out{row+j+1,2:5}]=deal(j,LastMeasuresForAim(j,1), LastMeasuresForAim(j,2), LastMeasuresForAim(j,3));
 end
-
-xlswrite([FullFileName '.xls'], out); %write output table to xls file in the same folder as source data
-
+% Sofiia 02.07.2025
+if Write2xls
+    xlswrite([FullFileName '.xls'], out); %write output table to xls file in the same folder as source data
+end
 end
 
 %plot function 
