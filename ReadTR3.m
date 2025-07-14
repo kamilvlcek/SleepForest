@@ -127,6 +127,9 @@ while feof(FileID)==0
         bc=strfind(line, ']');
         StartLocX=str2double(line(ba+1:bb-1)); 
         StartLocY=str2double(line(bb+2:bc-1)); 
+        NorthArrow = 0; %default values for trial. In some old trials, Orientation Marks Shown never happens
+        Statues = 0;
+        Cues = 0;
     end                                             %%%
     if strfind(line, 'Orientation Marks Shown') %%% e.g. Orientation Marks Shown : North Compas 0, Statues : 1 
         PosNA=strfind(line, 'North Compas');
@@ -147,7 +150,7 @@ while feof(FileID)==0
         n=strfind(line, 'Aim search:');
         CurrentAim=line(n+11:n+14); %%% e.g. AimA
     end
-    if strfind(line,'Ukazte na')  
+    if contains(line,'Ukazte na') ||  contains(line,'Ukaz na')
         stav=1; %state - 1-pointing , 2- navigation
     end 
     if contains(line,'space') && stav==1 %pointing - data line with space key pressed
@@ -157,7 +160,7 @@ while feof(FileID)==0
             Angle=Angle+360;
         end
     end 
-    if contains(line, 'text:Najdete') %e.g. text:Najdete JELENA;
+    if contains(line, 'text:Najdete') || contains(line, 'text:Najdi') %e.g. text:Najdete JELENA;
         stav=2;
         timesec=[];
         ArenaLocX=[]; 
@@ -167,7 +170,13 @@ while feof(FileID)==0
         ErrLocX=[]; %position where error occured
         ErrLocY=[];
         n=strfind(line, 'text:Najdete');
-        Cil=line(n+13:end-2); %goal name, e.g. KOLIBRIKA
+        if isempty(n)
+            n=strfind(line, 'text:Najdi'); 
+            Cil=line(n+11:end-2); %goal name, e.g. KOLIBRIKA
+        else
+            Cil=line(n+13:end-2); %goal name, e.g. KOLIBRIKA
+        end
+        
         SearchAnimal=1; % added March 6 2024
     end 
     
@@ -291,28 +300,30 @@ while feof(FileID)==0
         out{2+SearchNum,21}=1/ToOptimalLength; %kamil 8.4.2024 'path efficiency';
         
         %edo 6.12.2023 %values for categoris 3 difficulty levels x 2 North/Statues shown, across all trials
-        NumTr(TrialTypeKE,Cues)=NumTr(TrialTypeKE,Cues)+1; % Cues: 1 = North shown, 2 = Statues shown
-        NumAimFound(TrialTypeKE,Cues)=NumAimFound(TrialTypeKE,Cues)+AimFound;   %num success
-        TotNumErr(TrialTypeKE,Cues)=TotNumErr(TrialTypeKE,Cues)+NumErr; %num errors
-        SumPathDev(TrialTypeKE,Cues)=SumPathDev(TrialTypeKE,Cues)+ToOptimalLength; %path deviation
-        SumAbsAngErr(TrialTypeKE,Cues)=SumAbsAngErr(TrialTypeKE,Cues)+abs(AngleError);
-        SumOptToRealPath(TrialTypeKE,Cues)=SumOptToRealPath(TrialTypeKE,Cues)+(1/ToOptimalLength); % 'path efficiency';
-        LastMeasuresForAim(CurBox,:) = [Duration, 1/ToOptimalLength,abs(AngleError )]; %columns: 'duration', 'path efficiency' 'angle error',
-        
-        if SearchNum<13 % first 12 trials
-            NumTr(TrialTypeKE,Cues,2)=NumTr(TrialTypeKE,Cues,2)+1;
-            NumAimFound(TrialTypeKE,Cues,2)=NumAimFound(TrialTypeKE,Cues,2)+AimFound;
-            TotNumErr(TrialTypeKE,Cues,2)=TotNumErr(TrialTypeKE,Cues,2)+NumErr;
-            SumPathDev(TrialTypeKE,Cues,2)=SumPathDev(TrialTypeKE,Cues,2)+ToOptimalLength;
-            SumAbsAngErr(TrialTypeKE,Cues,2)=SumAbsAngErr(TrialTypeKE,Cues,2)+abs(AngleError);
-            SumOptToRealPath(TrialTypeKE,Cues,2)=SumOptToRealPath(TrialTypeKE,Cues,2)+(1/ToOptimalLength);        
-        elseif SearchNum>18 && SearchNum<31 %last 12 trials
-            NumTr(TrialTypeKE,Cues,3)=NumTr(TrialTypeKE,Cues,3)+1;
-            NumAimFound(TrialTypeKE,Cues,3)=NumAimFound(TrialTypeKE,Cues,3)+AimFound;
-            TotNumErr(TrialTypeKE,Cues,3)=TotNumErr(TrialTypeKE,Cues,3)+NumErr;
-            SumPathDev(TrialTypeKE,Cues,3)=SumPathDev(TrialTypeKE,Cues,3)+ToOptimalLength;
-            SumAbsAngErr(TrialTypeKE,Cues,3)=SumAbsAngErr(TrialTypeKE,Cues,3)+abs(AngleError);
-            SumOptToRealPath(TrialTypeKE,Cues,3)=SumOptToRealPath(TrialTypeKE,Cues,3)+(1/ToOptimalLength);  
+        if Cues>0 
+            NumTr(TrialTypeKE,Cues)=NumTr(TrialTypeKE,Cues)+1; % Cues: 1 = North shown, 2 = Statues shown
+            NumAimFound(TrialTypeKE,Cues)=NumAimFound(TrialTypeKE,Cues)+AimFound;   %num success
+            TotNumErr(TrialTypeKE,Cues)=TotNumErr(TrialTypeKE,Cues)+NumErr; %num errors
+            SumPathDev(TrialTypeKE,Cues)=SumPathDev(TrialTypeKE,Cues)+ToOptimalLength; %path deviation
+            SumAbsAngErr(TrialTypeKE,Cues)=SumAbsAngErr(TrialTypeKE,Cues)+abs(AngleError);
+            SumOptToRealPath(TrialTypeKE,Cues)=SumOptToRealPath(TrialTypeKE,Cues)+(1/ToOptimalLength); % 'path efficiency';
+            LastMeasuresForAim(CurBox,:) = [Duration, 1/ToOptimalLength,abs(AngleError )]; %columns: 'duration', 'path efficiency' 'angle error',
+
+            if SearchNum<13 % first 12 trials
+                NumTr(TrialTypeKE,Cues,2)=NumTr(TrialTypeKE,Cues,2)+1;
+                NumAimFound(TrialTypeKE,Cues,2)=NumAimFound(TrialTypeKE,Cues,2)+AimFound;
+                TotNumErr(TrialTypeKE,Cues,2)=TotNumErr(TrialTypeKE,Cues,2)+NumErr;
+                SumPathDev(TrialTypeKE,Cues,2)=SumPathDev(TrialTypeKE,Cues,2)+ToOptimalLength;
+                SumAbsAngErr(TrialTypeKE,Cues,2)=SumAbsAngErr(TrialTypeKE,Cues,2)+abs(AngleError);
+                SumOptToRealPath(TrialTypeKE,Cues,2)=SumOptToRealPath(TrialTypeKE,Cues,2)+(1/ToOptimalLength);        
+            elseif SearchNum>18 && SearchNum<31 %last 12 trials
+                NumTr(TrialTypeKE,Cues,3)=NumTr(TrialTypeKE,Cues,3)+1;
+                NumAimFound(TrialTypeKE,Cues,3)=NumAimFound(TrialTypeKE,Cues,3)+AimFound;
+                TotNumErr(TrialTypeKE,Cues,3)=TotNumErr(TrialTypeKE,Cues,3)+NumErr;
+                SumPathDev(TrialTypeKE,Cues,3)=SumPathDev(TrialTypeKE,Cues,3)+ToOptimalLength;
+                SumAbsAngErr(TrialTypeKE,Cues,3)=SumAbsAngErr(TrialTypeKE,Cues,3)+abs(AngleError);
+                SumOptToRealPath(TrialTypeKE,Cues,3)=SumOptToRealPath(TrialTypeKE,Cues,3)+(1/ToOptimalLength);  
+            end
         end
         
         clear Angle; %if subject hadn't point to target in the next trial
