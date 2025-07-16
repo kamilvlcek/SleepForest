@@ -19,7 +19,7 @@ end
 if ~exist('TrajectoriesToShow','var'), TrajectoriesToShow=[]; end
 %%% Sofia 02.07.2025 %%%
 if ~exist('DoPlot','var')
-    DoPlot = 1; % By default, generate plots
+    DoPlot = 1; % By default, generate plots , 2 means to save plot to png but not show it
 end
 if ~exist('Write2xls','var')
     Write2xls = 1; % By default, generate xls file
@@ -42,6 +42,14 @@ else
 end
 %FileName=['D:\Users\kelemen\Data\VRKamil\' FileNameIn '.tr'];
 FileName = basename(FullFileName); %without path, only filename
+if DoPlot>1
+    figurepath = [fileparts(FullFileName) '/figures/'];
+    if ~exist(figurepath, 'dir')
+       mkdir(figurepath)
+    end
+else
+    figurepath = [];
+end
 
 %output table - first row
 out{1,1}=FileName;
@@ -182,7 +190,7 @@ while feof(FileID)==0
     
     
     %ukonceni hledani cile 
-    if strfind(line, 'CHYBA !')
+    if strfind(line, 'CHYBY') %kamil 15.7.2025 - this counts direction errors in the track file. CHYBA shows also error with incorrect entrance of goal in test
       NumErr=NumErr+1;
       ErrLocX(NumErr)=ArenaLocX(DLN); %subject position at error
       ErrLocY(NumErr)=ArenaLocY(DLN);
@@ -332,8 +340,8 @@ end
 
 % udelam obrazek dodatecne
 %%% Sofia 02.07.2025 %%%
-if DoPlot
-    Obrazky(FIGUREDATA,PlotsInFigure,FileName,SubPlots,OrderTrials,TrajectoriesToShow);
+if DoPlot > 0
+    Obrazky(FIGUREDATA,PlotsInFigure,FileName,SubPlots,OrderTrials,TrajectoriesToShow,figurepath);
 end
 %KAMIL 22.5.2025 - tady jsou asi chyby
 
@@ -480,7 +488,7 @@ end
 end
 
 %plot function 
-function Obrazky(FD,PlotsInFigure,FileName,SubPlots,OrderTrials,TrajectoriesToShow)
+function Obrazky(FD,PlotsInFigure,FileName,SubPlots,OrderTrials,TrajectoriesToShow,figurepath)
     % arguments:
     % FD - all plot values
     % FileName
@@ -503,6 +511,8 @@ function Obrazky(FD,PlotsInFigure,FileName,SubPlots,OrderTrials,TrajectoriesToSh
         FD = FD(TrajectoriesToShow);
     end
     Kategorie = unique([FD.TrialTypeKE]);  % trials categories 1-3
+    savefigure = 0; %at the start, no figure is to be save before starting new one
+    figures_saved = 0;
     for kat = 1:numel(Kategorie)
         tt = find(ismember([FD.TrialTypeKE] ,Kategorie(kat)) ); %indexes of this category in  FD
         ToOptimalLength = [FD(tt).ToOptimalLength];        
@@ -538,13 +548,31 @@ function Obrazky(FD,PlotsInFigure,FileName,SubPlots,OrderTrials,TrajectoriesToSh
             if Cues == 1, CuesStr = 'North'; elseif Cues == 2, CuesStr = 'Statues'; elseif Cues == 3, CuesStr = 'N+S'; else CuesStr=''; end
             
             if SubPlots == 1 && rem(n,PlotsInFigure)==1 %if we plot subplots for individual tracks and this is the first track/subplots in this figure
-				figurename = [ FileName ' - Level ' num2str(Kategorie(kat)) ' - Plot ' num2str(ceil(n/PlotsInFigure))];
-                figure('Name',figurename,'position', [50, 50, 900, 700]);
+                if savefigure %if figure was created before
+                    saveas(fh,[figurepath figurename '.png']);
+                    figures_saved = figures_saved + 1;
+                    close(fh);                    
+                end
+                figurename = [ FileName ' - Level ' num2str(Kategorie(kat)) ' - Plot ' num2str(ceil(n/PlotsInFigure))];
+                fh=figure('Name',figurename,'position', [50, 50, 900, 700]);               
+                if exist('figurepath','var') && ~isempty(figurepath) && exist('figurename','var') 
+                    set(fh, 'Visible', 'off'); %makes figure invisible
+                    savefigure = 1; 
+                end
             elseif SubPlots == 0 && n==1 %if we do not plot subplots and this is the first track
+                if savefigure %if figure was created before
+                    saveas(fh,[figurepath figurename '.png']);
+                    figures_saved = figures_saved + 1;
+                    close(fh);                    
+                end               
                 figurename = [ FileName ' - Level ' num2str(Kategorie(kat)) ]; %nastartuju obrazek                
-                figure('Name',figurename,'position', [50, 50, 900, 700]);
+                fh=figure('Name',figurename,'position', [50, 50, 900, 700]);
+                if exist('figurepath','var') && ~isempty(figurepath) && exist('figurename','var')
+                    set(fh, 'Visible', 'off'); %makes figure invisible                    
+                    savefigure = 1;
+                end
             end
-			
+            			
             StartPlot = false; %if to plot common parts across subplots - all except track itself
             if SubPlots %whether to plot tracks in individual subplots
                 PlotPosition=n;
@@ -591,7 +619,7 @@ function Obrazky(FD,PlotsInFigure,FileName,SubPlots,OrderTrials,TrajectoriesToSh
             if SubPlots == 0 % tracks numbers if plotting all tracks into one plot
                 textoffset = 150;
                 OF = [1 1; -1 -1; 1 -1; -1 1; 0 1; 1 0; 0 -1; -1 0; .5 .5; -.5 -.5; .5 -.5; -.5 .5]; %distribution of trial number around - each line is [x,y] offset for a trial
-                OF = repmat(OF,4,1); %we need enoug rows for all possible training trials
+                OF = repmat(OF,5,1); %we need enoug rows for all possible training trials
                 text(ArenaLocX(2)+textoffset*OF(n,1),0-ArenaLocY(2)+textoffset*OF(n,2),num2str(FD(m).Trial),'Color',c, 'FontSize',14); %number near start
                 text(AimX(CurBox)+textoffset*OF(n,1),0-AimY(CurBox)+textoffset*OF(n,2),num2str(FD(m).Trial),'Color',c,'FontSize',14); %number near goal                
             end
@@ -607,7 +635,13 @@ function Obrazky(FD,PlotsInFigure,FileName,SubPlots,OrderTrials,TrajectoriesToSh
             axis equal
 			axis ij
 			set ( gca, 'xdir', 'reverse' )
-            axis off %vymazu osy grafu, zustane je cerny ctverec
-        end
+            axis off %vymazu osy grafu, zustane je cerny ctverec            
+        end        
+    end
+    if savefigure
+        saveas(fh,[figurepath figurename '.png']);
+        figures_saved = figures_saved + 1;
+        close(fh);                    
+        disp([ num2str(figures_saved) ' figures saved ']);
     end
 end
