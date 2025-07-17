@@ -1,35 +1,49 @@
+function all_data_table = batch_process_spanav(data_directory, output_directory)
 % =========================================================================
-%
-% This script automates the analysis of spatial navigation data for all
+% This function automates the analysis of spatial navigation data for all
 % subjects and consolidates the results into one large table
 %
 % 1. Identifies all unique subjects in a specified data directory
-% 2. For each subject and each phase (2, 3, 4), it finds all matching
-%    log files and selects the largest one for processing
+% 2. For each subject and each phase (2, 3, 4), it finds all matching log files and selects the largest one for processing
 % 3. Extracts a specific subset of columns from the analysis output
 % 4. Adds new columns for 'subject' ID and 'teststage' (2, 3, or 4)
 % 5. Aggregates all trial data from all subjects into a single table
 % 6. Saves the final consolidated table to a single Excel file and mat file
-% 7. Creates a detailed log file ('processing_log.txt') to track progress,
-%    file selection, and report errors
+% 7. Creates a detailed log file ('processing_log.txt') to track progress, file selection, and report errors
 %
+%   INPUTS:
+%       data_directory (string):
+%           The full path to the folder containing the raw .tr data files for all subjects
+%           Example: 'E:\work\Sleep project\sleepforest\all_spanav_raw_data'
+%
+%       output_directory (string):
+%           The full path to the folder where the processed results (xls table, .mat file, and log file) will be saved.
+%           The folder will be created if it does not exist.
+%           Example: 'E:\work\Sleep project\sleepforest\processed_spanav_results'
+%
+%   OUTPUTS:
+%       all_data_table (table):
+%           A MATLAB table containing the data from all processed subjects and trials (all_subjects_data.mat),
+%            + the same table saved in xls (all_subjects_data.xlsx)
+%       a detailed log file ('processing_log.txt')
+%
+%   DEPENDENCIES:
+%       This function requires the 'ReadTR3.m' function and all its helper
+%       functions to be on the MATLAB path or in the current directory.
+%
+%   Example Usage:
+%       raw_path = 'E:\work\Sleep project\sleepforest\all_spanav_raw_data';
+%       results_path = 'E:\work\Sleep project\sleepforest\processed_spanav_results';
+%       batch_process_spanav = process_spanav_data(raw_path, results_path);
 % =========================================================================
 
-clear;
-clc;
-close all;
-
-%% --- Configuration ---
-% set paths 
-data_directory   = 'E:\work\Sleep project\sleepforest\all_spanav_raw_data';
-output_directory = 'E:\work\Sleep project\sleepforest\processed_spanav_results';
-
+% --- Configuration ---
 % Create the output directory if it doesn't exist
 if ~exist(output_directory, 'dir')
     mkdir(output_directory);
 end
 
-%% --- 1. Setup Logging ---
+% --- 1. Setup Logging ---
 log_filename = fullfile(output_directory, 'processing_log.txt');
 logFileID = fopen(log_filename, 'w');
 cleanupObj = onCleanup(@() fclose(logFileID));
@@ -38,7 +52,7 @@ log_message = @(message) [fprintf('%s\n', message), fprintf(logFileID, '%s\n', m
 log_message(sprintf('Batch processing started at: %s', datetime('now')));
 log_message('==================================================');
 
-%% --- 2. Find Unique Subjects ---
+% --- 2. Find Unique Subjects ---
 log_message(sprintf('Scanning for subjects in: %s', data_directory));
 all_files = dir(fullfile(data_directory, '*.tr'));
 if isempty(all_files)
@@ -52,26 +66,26 @@ unique_subject_ids = unique(subject_ids);
 log_message(sprintf('Found %d unique subjects.\n', length(unique_subject_ids)));
 
 
-%% --- 3. Initialize Data Collection and Define Headers ---
+% --- 3. Initialize Data Collection and Define Headers ---
 final_headers = {'subject', 'teststage', 'trial', 'aim', 'animal', 'North_marked', 'Statues_present', ...
-                 'aim_found', 'duration', 'length', 'path_deviation', 'errors', ...
-                 'StartField', 'GoalField', 'N_trained_pairs', 'N_turns', 'Level_type', ...
-                 'angle_indicated', 'angle_real', 'angle_error', 'path_efficiency'};
+    'aim_found', 'duration', 'length', 'path_deviation', 'errors', ...
+    'StartField', 'GoalField', 'N_trained_pairs', 'N_turns', 'Level_type', ...
+    'angle_indicated', 'angle_real', 'angle_error', 'path_efficiency'};
 column_indices_to_keep = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 21];
 all_data_combined = final_headers;
 
 subjects_processed_successfully = 0;
 
-%% --- 4. Process Each Subject ---
+% --- 4. Process Each Subject ---
 for i = 1:length(unique_subject_ids)
     subject_id = unique_subject_ids{i};
     log_message('--------------------------------------------------');
     log_message(sprintf('Processing Subject: %s (%d/%d)', subject_id, i, length(unique_subject_ids)));
-
+    
     files_processed_for_this_subject = 0;
- 
+    
     phase_numbers = [2, 3, 4]; % Train 1, Train 2, Test
-
+    
     % --- Loop through the three phases for the current subject ---
     for j = 1:length(phase_numbers)
         current_phase = phase_numbers(j);
@@ -96,7 +110,7 @@ for i = 1:length(unique_subject_ids)
             selected_filename = matching_files(max_idx).name;
             log_message(sprintf('  -> Phase %d: Selecting largest file: %s', current_phase, selected_filename));
         end
-
+        
         full_filepath = fullfile(data_directory, selected_filename);
         log_message(sprintf('    - Reading file: %s', selected_filename));
         
@@ -107,7 +121,7 @@ for i = 1:length(unique_subject_ids)
             log_message(sprintf('      Error message: %s', ME.message));
             continue;
         end
-
+        
         % --- data extraction ---
         if size(out, 1) < 3
             log_message('    - No trial data found in this file.');
@@ -136,28 +150,29 @@ for i = 1:length(unique_subject_ids)
         
     end % End of loop for phases (2, 3, 4)
     
-    % Check if all 3 files were processed for this subject  
+    % Check if all 3 files were processed for this subject
     if files_processed_for_this_subject == 3
         subjects_processed_successfully = subjects_processed_successfully + 1;
     end
     
 end % End of loop for subjects
 
-%% --- 5. Finalize and Save the Output ---
+% --- 5. Finalize and Save the Output ---
 log_message('--------------------------------------------------');
 log_message('All subjects processed. Consolidating final output...');
 
 if size(all_data_combined, 1) <= 1
     log_message('WARNING: No data was collected from any files. No output file will be generated.');
+    all_data_table = table(); % Return an empty table if no data
 else
     all_data_table = cell2table(all_data_combined(2:end,:), 'VariableNames', all_data_combined(1,:));
     
     % --- Robust data type conversion ---
     numeric_vars = {'teststage', 'trial', 'North_marked', 'Statues_present', 'aim_found', ...
-                    'duration', 'length', 'path_deviation', 'errors', 'StartField', 'GoalField', ...
-                    'N_trained_pairs', 'N_turns', 'Level_type', 'angle_indicated', 'angle_real', ...
-                    'angle_error', 'path_efficiency'};
-                    
+        'duration', 'length', 'path_deviation', 'errors', 'StartField', 'GoalField', ...
+        'N_trained_pairs', 'N_turns', 'Level_type', 'angle_indicated', 'angle_real', ...
+        'angle_error', 'path_efficiency'};
+    
     for k = 1:length(numeric_vars)
         var_name = numeric_vars{k};
         if iscell(all_data_table.(var_name))
@@ -167,7 +182,7 @@ else
             all_data_table.(var_name) = cell2mat(temp_col);
         end
     end
-
+    
     
     try
         % Define filenames for both formats
@@ -186,7 +201,7 @@ else
         log_message('Data saved to:');
         log_message(output_xlsx_filename);
         log_message(output_mat_filename);
-
+        
     catch ME
         log_message('!!! FAILED TO WRITE FINAL OUTPUT FILES !!!');
         log_message(sprintf('    Error message: %s', ME.message));
@@ -196,4 +211,4 @@ end
 
 log_message('==================================================');
 log_message(sprintf('Batch processing finished at: %s', datetime('now')));
-    
+end
