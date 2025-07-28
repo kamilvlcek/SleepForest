@@ -1,19 +1,35 @@
 % =========================================================================
-% This script demonstrates how to use the 'analyze_and_plot_results' function
-% to perform different analyses on the spatial navigation data
+% This script demonstrates how to process raw spanav data by creating a large table for all subjects, 
+% merging it with group assignments and creating different figures on aggregated data (test/training)
 % =========================================================================
 
+%% clear everything
 clear;
 clc;
 close all;
 
-% --- Set up Paths ---
+%% run the analysis of spatial navigation data for all subjects and consolidates the results into one large table
 
-% Full path to the .mat file containing the data table from all subjects with groups
+% The full path to the folder containing the raw .tr data files for all subjects
+raw_path = 'E:\work\Sleep project\sleepforest\all_spanav_raw_data';
+
+% The full path to the folder where the processed results (xls table, .mat file, and log file) will be saved
+results_path = 'E:\work\Sleep project\sleepforest\processed_spanav_results';
+
+all_data_table = batch_process_spanav(raw_path, results_path);
+
+%% merge experimental spanav data (obtained by batch_process_spanav) with subject groups from an Excel file
+main_file = 'E:\work\Sleep project\sleepforest\processed_spanav_results\all_subjects_data.mat';
+meta_file = 'E:\work\Sleep project\sleepforest\processed_spanav_results\subjects_list.xlsx'; % xls with subject groups
+
+final_data = add_metadata_to_table(main_file, meta_file, results_path);
+
+%% create plots and tables with aggregated data
+
+% Full path to the .mat file containing the data table from all subjects with groups (obtained by add_metadata_to_table)
 data_file = 'E:\work\Sleep project\sleepforest\processed_spanav_results\all_subjects_data_with_groups.mat';
 % Full path to the folder where output files will be saved
 output_dir = 'E:\work\Sleep project\sleepforest\analysis_output';
-
 
 % --- Run Analyses ---
 

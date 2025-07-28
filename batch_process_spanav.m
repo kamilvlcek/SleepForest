@@ -34,7 +34,7 @@ function all_data_table = batch_process_spanav(data_directory, output_directory)
 %   Example Usage:
 %       raw_path = 'E:\work\Sleep project\sleepforest\all_spanav_raw_data';
 %       results_path = 'E:\work\Sleep project\sleepforest\processed_spanav_results';
-%       batch_process_spanav = process_spanav_data(raw_path, results_path);
+%       all_data_table = batch_process_spanav(raw_path, results_path);
 % =========================================================================
 
 % --- Configuration ---
