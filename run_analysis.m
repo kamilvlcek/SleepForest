@@ -24,7 +24,7 @@ meta_file = 'E:\work\Sleep project\sleepforest\processed_spanav_results\subjects
 
 final_data = add_metadata_to_table(main_file, meta_file, results_path);
 
-%% create plots and tables with aggregated data
+%% create plots and tables with aggregated data for training and test
 
 % Full path to the .mat file containing the data table from all subjects with groups (obtained by add_metadata_to_table)
 data_file = 'E:\work\Sleep project\sleepforest\processed_spanav_results\all_subjects_data_with_groups.mat';
@@ -44,3 +44,10 @@ analyze_and_plot_results(data_file, output_dir, 'training', 'mean_sem', 1);
 
 % 4. Analyze TRAINING phase data and generate Boxplots with median with saving all files
 analyze_and_plot_results(data_file, output_dir, 'training', 'boxplot', 1);
+
+%% analyze and visualize the memory change between test and training 
+% shows the direct change from Training to Test for each subject, without stats
+calculate_plot_memory_change(data_file, output_dir, 0, 0); 
+
+% shows the summary (Mean/SEM) of the calculated change scores for each group with individual points; performs the Mann-Whitney U tests on change
+calculate_plot_memory_change(data_file, output_dir, 1, 1); 
