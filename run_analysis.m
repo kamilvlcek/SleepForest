@@ -45,9 +45,25 @@ analyze_and_plot_results(data_file, output_dir, 'training', 'mean_sem', 1);
 % 4. Analyze TRAINING phase data and generate Boxplots with median with saving all files
 analyze_and_plot_results(data_file, output_dir, 'training', 'boxplot', 1);
 
-%% analyze and visualize the memory change between test and training 
+%% analyze and visualize the memory change between test and training (L1 pairs)
 % shows the direct change from Training to Test for each subject, without stats
 calculate_plot_memory_change(data_file, output_dir, 0, 0); 
 
 % shows the summary (Mean/SEM) of the calculated change scores for each group with individual points; performs the Mann-Whitney U tests on change
 calculate_plot_memory_change(data_file, output_dir, 1, 1); 
+
+
+%% visualize the learning curves from the training phase
+analyze_training_learning(data_file, output_dir);
+
+%% visualize the learning curves from the test phase (separate for North and Statues condition)
+analyze_test_phase_learning(data_file, output_dir);
+
+%% analyze and visualize the memory change between test and training (including L2 and L3 pairs) %09.09.2025
+% shows the Mean/SEM of the calculated change scores for each group with individual points separately for each level and cue condition; performs the Mann-Whitney U tests on change
+calculate_advanced_memory_change(data_file, output_dir,1);
+
+% for each level of difficulty, it uses a specific training baseline:
+%          - L1 BASELINE: Performance on the LAST training trial of the exact same path (e.g., A->B)
+%          - L2 BASELINE: The AVERAGE performance of the LAST training trials of the two constituent L1 components (e.g., A->B and B->C for an A->C test trial)
+%          - L3 BASELINE: The AVERAGE performance of the LAST training trials of all unique L1 paths (8 pairs), serving as a global baseline
